@@ -3,19 +3,28 @@ const N_COLS = 7;
 
 const board = new Uint8Array(N_ROWS * N_COLS);
 const YELLOW = 1;
-const RED = 2;
+const RED = 10; // some hacking in bot.js relies on these exact values
 
 var player = YELLOW;
 var game_over = false;
 var total_moves = 0;
 
-// TODO: make these set via flags
+// TODO: set via UI
 function is_bot(player) {
 	if (player === YELLOW) {
 		return false;
 	} else {
 		return true;
 	}
+}
+
+// TODO standardize on this representation
+function Point(row, col) {
+	this.row = row;
+	this.col = col;
+}
+Point.prototype.toString = function pointToString() {
+	return " (" + this.row + "," + this.col + ") ";
 }
 
 function get(row, col, board) {
@@ -42,12 +51,12 @@ function set(val, row, col, board) {
 function slices(check_row, check_col, board) {
 	var row_squares = []
 	for (var col = 0; col < N_COLS; col++) {
-		row_squares.push([check_row, col]);
+		row_squares.push(new Point(check_row, col));
 	}
 
 	var col_squares = []
 	for (var row = 0; row < N_ROWS; row++) {
-		col_squares.push([row, check_col]);
+		col_squares.push(new Point(row, check_col));
 	}
 
 	var asc_diag = [];
@@ -56,7 +65,7 @@ function slices(check_row, check_col, board) {
 		var row = check_row - min;
 		var col = check_col - min;
 		while (row < N_ROWS && col < N_COLS) {
-			asc_diag.push([row, col]);
+			asc_diag.push(new Point(row, col));
 			row++;
 			col++;
 		}
@@ -68,7 +77,7 @@ function slices(check_row, check_col, board) {
 		var row = check_row - adjust;
 		var col = check_col + adjust;
 		while (row < N_ROWS && col >= 0) {
-			desc_diag.push([row, col]);
+			desc_diag.push(new Point(row, col));
 			row++;
 			col--;
 		}

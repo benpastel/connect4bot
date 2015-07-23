@@ -89,8 +89,8 @@ function checkWinner(row, col) {
 	}
 
 	function win(squares) {
-		var start = toPixels(squares[0][0], squares[0][1]);
-		var end = toPixels(squares[3][0], squares[3][1]);
+		var start = toPixels(squares[0].row, squares[0].col);
+		var end = toPixels(squares[3].row, squares[3].col);
 		var path = paper.path(
 			"M" + start.x + "," + start.y + 
 			"L" + end.x + "," + end.y);
@@ -113,7 +113,7 @@ function checkWinner(row, col) {
 	function check(squares) {
 		var in_a_row = 0;
 		for (var i=0; i<squares.length; i++) {
-			if (get(squares[i][0], squares[i][1], board) === player) {
+			if (get(squares[i].row, squares[i].col, board) === player) {
 				in_a_row++;
 				if (in_a_row === 4) { 
 					win_squares = [
