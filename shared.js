@@ -11,11 +11,10 @@ var total_moves = 0;
 
 // TODO: set via UI
 function is_bot(player) {
-	if (player === YELLOW) {
-		return false;
-	} else {
-		return true;
-	}
+	return player === YELLOW ? false : true;
+}
+function other_player() {
+	return player === YELLOW ? RED : YELLOW;
 }
 
 // TODO standardize on this representation

@@ -4,22 +4,16 @@ function unfilled_row(col, board) {
 			return row;
 		}
 	}
-	return N_ROWS;
+	return null;
 }
 
 function choose_move(player, board) {
 	return reflex_move(player, board);
 }
 
-// simple reflex agent with rules:
-// (1) win, if you can
-// (2) block 4-in-a-row, if you can
-// (3) don't play if your opponent has a threat above you
-// (4) don't play if you have a threat above you
-// (5) choose randomly
 const threats = new Uint8Array(N_ROWS * N_COLS);
 const last_updated = new Uint8Array(N_ROWS * N_COLS);
-function reflex_move(player, board) {
+function update_threats(board) {
 	// scan for new moves since we last checked
 	var new_moves = []
 	for (var col = 0; col < N_COLS; col++) {
@@ -31,7 +25,6 @@ function reflex_move(player, board) {
 			}
 		}
 	}
-	console.log("looking at " + new_moves.length + " new moves: " + new_moves);
 	function mark_threats(slice) {
 		// a threat means 4 consecutive squares with 
 		// 3 of one color + 1 empty square 
@@ -65,20 +58,51 @@ function reflex_move(player, board) {
 	for (var i = 0; i < new_moves.length; i++) {
 		slices(new_moves[i].row, new_moves[i].col).forEach(mark_threats);
 	}
-	return left_move(player, board);
 }
 
-// take the leftmost available move
-function left_move(player, board) {
-	for (var col = 0; col < N_COLS; col++) {
+// simple reflex agent with rules:
+// (1) win, if you can
+// (2) block 4-in-a-row, if you can
+// (3) don't play if your opponent has a threat above you
+// (4) don't play if you have a threat above you
+// (5) choose randomly
+function reflex_move(player, board) {
+	update_threats(board);
+
+	var options = [];
+	for (var col=0; col<N_COLS; col++) {
 		var row = unfilled_row(col, board);
-		if (row < N_ROWS) {
-			return {
-				row: row,
-				col: col
-			};
+		if (row !== null) {
+			options.push(new Point(row, col));
 		}
 	}
-	throw "board is unexpectedly full!";
-}
+	if (options.length === 0) { throw "board unexpectedly filled"; }
 
+	function eval(square) {
+		const threat_here = get(square.row, square.col, threats);
+		const threat_above = (square.row+1 < N_ROWS) ? 
+			get(square.row+1, square.col, threats) : 0;
+		
+		var val = Math.floor(Math.random() * 10); // rand < 10
+		if (threat_here === player) {val += 10000; }
+		if (threat_here === other_player()) {val += 1000; }
+		if (threat_above === other_player()) {val += 100; }
+		if (threat_above === player) {val += 10; }
+		return val;
+	}
+
+	const vals = options.map(eval);
+	var max = -1;
+	var best_i = -1;
+	for (var i=0; i<vals.length; i++) {
+		if (vals[i] > max) {
+			max = vals[i];
+			best_i = i;
+		}
+	}
+	console.log("options: " + options);
+	console.log("vals: " + vals);
+	console.log("choosing " + options[best_i]);
+
+	return options[best_i];
+}

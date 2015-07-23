@@ -143,7 +143,7 @@ function main_loop(row, col) {
 
     checkWinner(row, col);
 
- 	player = (player === YELLOW ? RED : YELLOW);
+ 	player = other_player();
 
  	if (!game_over && is_bot(player)) {
  		var move = choose_move(player, board);
