@@ -119,7 +119,7 @@ function main_loop(row, col) {
 		end(result_check);
 	}
 
- 	global_player = other_player();
+ 	global_player = other(global_player);
 
  	if (!global_game_over && is_bot(global_player)) {
  		var move = choose_move(global_player, global_board);

@@ -15,8 +15,8 @@ var global_moves = 0;
 function is_bot(player) {
 	return global_player === YELLOW ? false : true;
 }
-function other_player() {
-	return global_player === YELLOW ? RED : YELLOW;
+function other(player) {
+	return player === YELLOW ? RED : YELLOW;
 }
 
 function Point(row, col) {
@@ -133,4 +133,22 @@ function check_result(row, col, board) {
 		result: RESULT.CONTINUE,
 		squares: null
 	};
+}
+
+function board_to_string(board) {
+	var string = "\n";
+	for (var row = N_ROWS-1; row >= 0; row--) {
+		for (var col = 0; col < N_COLS; col++) {
+			var val = get(row, col, board);
+			if (val === YELLOW) {
+				string += "Y\t"; 
+			} else if (val === RED) {
+				string += "R\t";
+			} else {
+				string += ".\t";
+			}
+		}
+		string += "\n";
+	}
+	return string;
 }
