@@ -1,23 +1,24 @@
 const N_ROWS = 6;
 const N_COLS = 7;
 
-const board = new Uint8Array(N_ROWS * N_COLS);
-const YELLOW = 1;
-const RED = 10; // some hacking in bot.js relies on these exact values
+const global_board = new Uint8Array(N_ROWS * N_COLS);
 
-var player = YELLOW;
-var game_over = false;
-var total_moves = 0;
+// fast checks rely on these exact values
+const YELLOW = 1;
+const RED = 10; 
+
+var global_player = YELLOW;
+var global_game_over = false;
+var global_moves = 0;
 
 // TODO: set via UI
 function is_bot(player) {
-	return player === YELLOW ? false : true;
+	return global_player === YELLOW ? false : true;
 }
 function other_player() {
-	return player === YELLOW ? RED : YELLOW;
+	return global_player === YELLOW ? RED : YELLOW;
 }
 
-// TODO standardize on this representation
 function Point(row, col) {
 	this.row = row;
 	this.col = col;
@@ -84,4 +85,52 @@ function slices(check_row, check_col, board) {
 	return [
 		row_squares, col_squares, asc_diag, desc_diag
 	];
+}
+
+const RESULT = {
+	CONTINUE : 0,
+	YELLOW_WINS : 1,
+	RED_WINS : 2,
+	DRAW : 3
+};
+function check_result(row, col, board) {
+	const sliced = slices(row, col, board);
+	for (var s=0; s<sliced.length; s++) {
+		var slice = sliced[s];
+		var vals = slice.map(function(square){
+			return get(square.row, square.col, board);
+		});
+		for (var i = 0; i < slice.length - 3; i++) {
+			var sum = vals[i] + vals[i+1] + vals[i+2] + vals[i+3];
+			if (sum === 4) {
+				return {
+					result: RESULT.YELLOW_WINS,
+					squares: [slice[i], slice[i+1], slice[i+2], slice[i+3]]
+				};
+			} 
+			if (sum === 40) {
+				return {
+					result: RESULT.RED_WINS,
+					squares: [slice[i], slice[i+1], slice[i+2], slice[i+3]]
+				};
+			}
+		}
+	}
+
+	// are all of the top rows full?
+	for (var col = 0; col < N_COLS; col++) {
+		if (get(N_ROWS-1, col, board) === 0) {
+			break;
+		}
+	}
+	if (col === N_COLS) { 
+		return {
+			result: RESULT.DRAW,
+			squares: null
+		};
+	}
+	return {
+		result: RESULT.CONTINUE,
+		squares: null
+	};
 }

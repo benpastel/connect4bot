@@ -46,7 +46,7 @@ function message(string) {
 }
 
 function onClick(e) {
-	if (game_over) {
+	if (global_game_over) {
 		return;
 	}
 
@@ -60,7 +60,7 @@ function onClick(e) {
 	} 
 
 	for (var row = 0; row < N_ROWS; row++) {
-		if (get(row, col, board) === 0) {
+		if (get(row, col, global_board) === 0) {
 			break;
 		}
 	}
@@ -72,81 +72,57 @@ function onClick(e) {
 	main_loop(row, col);
 }
 
-function updateDisplay(row, col) {
+function updateDisplay(row, col, player) {
 	var xy = toPixels(row, col);
 	var circle = paper.circle(xy.x, xy.y, SQUARE_SIDE / 2.0 - 1); 
 	var color = (player === YELLOW ? "#ff0" : "#f00");
 	circle.attr("fill", color);
 }
 
-function checkWinner(row, col) {
-	total_moves++;
-	if (total_moves === N_ROWS * N_COLS) {
-		message("DRAW!")
-			.attr("fill", "#000");
-		game_over = true;
+function end(result_check) {
+	global_game_over = true;
+		
+	if (result_check.result === RESULT.DRAW) {
+		message("DRAW!").attr("fill", "#000");
 		return;
 	}
+		
+	var start = toPixels(result_check.squares[0].row, result_check.squares[0].col);
+	var end = toPixels(result_check.squares[3].row, result_check.squares[3].col);
+	var path = paper.path(
+		"M" + start.x + "," + start.y + 
+		"L" + end.x + "," + end.y);
+	path.attr("stroke-dasharray","-");
+	path.attr("stroke-width", 4.0);
 
-	function win(squares) {
-		var start = toPixels(squares[0].row, squares[0].col);
-		var end = toPixels(squares[3].row, squares[3].col);
-		var path = paper.path(
-			"M" + start.x + "," + start.y + 
-			"L" + end.x + "," + end.y);
-		path.attr("stroke-dasharray","-");
-		path.attr("stroke-width", 4.0);
-
-		if (player === YELLOW) {
-			message("YELLOW WINS!")
-				.attr("fill", "#ff0")
-				.attr("stroke", "#000");
-		} else {
-			message("RED WINS!")
-				.attr("fill", "#f00")
-				.attr("stroke", "#000");
-		}
-
-		game_over = true;
+	if (result_check.result === RESULT.YELLOW_WINS) {
+		message("YELLOW WINS!")
+			.attr("fill", "#ff0")
+			.attr("stroke", "#000");
+	} else {
+		message("RED WINS!")
+			.attr("fill", "#f00")
+			.attr("stroke", "#000");
 	}
-
-	function check(squares) {
-		var in_a_row = 0;
-		for (var i=0; i<squares.length; i++) {
-			if (get(squares[i].row, squares[i].col, board) === player) {
-				in_a_row++;
-				if (in_a_row === 4) { 
-					win_squares = [
-						squares[i],
-						squares[i-1],
-						squares[i-2],
-						squares[i-3]];
-					win(win_squares); 
-				}
-			} else {
-				in_a_row = 0;
-			}
-		}
-			
-	}
-
-	slices(row, col, board).forEach(check);
 }
 
 document.addEventListener("click", onClick);
 message("click anywhere to drop a piece");
 function main_loop(row, col) {
 	message("");
-	set(player, row, col, board);
+	set(global_player, row, col, global_board);
 
-	updateDisplay(row, col);
+	updateDisplay(row, col, global_player);
 
-    checkWinner(row, col);
+	const result_check = check_result(row, col, global_board);
+	if (result_check.result !== RESULT.CONTINUE) {
+		end(result_check);
+	}
 
- 	player = other_player();
+ 	global_player = other_player();
 
- 	if (!game_over && is_bot(player)) {
- 		var move = choose_move(player, board);
+ 	if (!global_game_over && is_bot(global_player)) {
+ 		var move = choose_move(global_player, global_board);
  		main_loop(move.row, move.col);
  	}
 }

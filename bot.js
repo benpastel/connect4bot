@@ -1,3 +1,6 @@
+const global_threats = new Uint8Array(N_ROWS * N_COLS);
+const last_updated = new Uint8Array(N_ROWS * N_COLS);
+
 function unfilled_row(col, board) {
 	for (var row = 0; row < N_ROWS; row++) {
 		if (get(row, col, board) === 0) {
@@ -8,12 +11,10 @@ function unfilled_row(col, board) {
 }
 
 function choose_move(player, board) {
-	return reflex_move(player, board);
+	return reflex_move(player, board, global_threats);
 }
 
-const threats = new Uint8Array(N_ROWS * N_COLS);
-const last_updated = new Uint8Array(N_ROWS * N_COLS);
-function update_threats(board) {
+function update_threats(board, threats) {
 	// scan for new moves since we last checked
 	var new_moves = []
 	for (var col = 0; col < N_COLS; col++) {
@@ -28,8 +29,6 @@ function update_threats(board) {
 	function mark_threats(slice) {
 		// a threat means 4 consecutive squares with 
 		// 3 of one color + 1 empty square 
-		//
-		// relies on YELLOW == 1, RED == 10 for faster checks
 
 		const vals = slice.map(function(square){
 			return get(square.row, square.col, board);
@@ -66,8 +65,8 @@ function update_threats(board) {
 // (3) don't play if your opponent has a threat above you
 // (4) don't play if you have a threat above you
 // (5) choose randomly
-function reflex_move(player, board) {
-	update_threats(board);
+function reflex_move(player, board, threats) {
+	update_threats(board, threats);
 
 	var options = [];
 	for (var col=0; col<N_COLS; col++) {
@@ -100,9 +99,9 @@ function reflex_move(player, board) {
 			best_i = i;
 		}
 	}
-	console.log("options: " + options);
-	console.log("vals: " + vals);
-	console.log("choosing " + options[best_i]);
-
 	return options[best_i];
 }
+
+// play reflex agent against itself a bunch of times
+// function monte_carlo_move(player, board) {
+// }
