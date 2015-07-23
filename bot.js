@@ -81,12 +81,13 @@ function reflex_move(player, board, threats) {
 		const threat_here = get(square.row, square.col, threats);
 		const threat_above = (square.row+1 < N_ROWS) ? 
 			get(square.row+1, square.col, threats) : 0;
-		
+
 		var val = Math.floor(Math.random() * 10); // rand < 10
 		if (threat_here === player) {val += 10000; }
 		if (threat_here === other_player()) {val += 1000; }
-		if (threat_above === other_player()) {val += 100; }
+		if (threat_above === other_player()) {val -= 100; }
 		if (threat_above === player) {val += 10; }
+
 		return val;
 	}
 
@@ -103,5 +104,8 @@ function reflex_move(player, board, threats) {
 }
 
 // play reflex agent against itself a bunch of times
-// function monte_carlo_move(player, board) {
-// }
+function monte_carlo_move(player, board) {
+
+
+
+}
