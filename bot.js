@@ -1,13 +1,13 @@
 const global_threats = new Uint8Array(N_ROWS * N_COLS);
 const global_threats_updated = new Uint8Array(N_ROWS * N_COLS);
 
-const EVAL_FUNCTION = monte_carlo;
+const EVAL_FUNCTION = minimax;
 const MONTE_CARLO_TRIALS = 20;
 const SEARCH_DEPTH = 3;
 
 // single entry point to this file
 function choose_move(player, board) {
-	console.log("new turn!");
+	console.log("new turn");
 	return choose_move_with_eval(player, board, EVAL_FUNCTION, 
 		global_threats, global_threats_updated);
 }
@@ -144,7 +144,13 @@ function monte_carlo(square, orig_player, orig_board, orig_threats, orig_updated
 		var result = check_result(square.row, square.col, board).result;
 		update_threats(board, threats, updated);
 
+		// prefer a hard result to a monte carlo result
+		// TODO cleanup this area!
+		var hard_result = true;
+
 		while (result === RESULT.CONTINUE) {
+			hard_result = false;
+
 			var move = choose_move_with_eval(player, board, reflex, threats, updated);
 
 			board[move.row + move.col * N_ROWS] = player;
@@ -158,16 +164,15 @@ function monte_carlo(square, orig_player, orig_board, orig_threats, orig_updated
 		var winner = (
 			result === RESULT.YELLOW_WINS ? YELLOW :
 			result === RESULT.RED_WINS ? RED : 0);
+
 		if (orig_player === winner) {
-			score += 1;
+			score += hard_result ? 10 : 1;
 		} else if (other(orig_player) === winner) {
-			score -= 1;
+			score -= hard_result ? 10 : 1;
 		}	
 	}
-	console.log(square + " -> " + score / MONTE_CARLO_TRIALS);
 	return score / MONTE_CARLO_TRIALS;
 }
-
 
 function minimax_rec(square, player, orig_player, orig_board, depth, threats, updated) {
 	// simulate the move
@@ -175,7 +180,7 @@ function minimax_rec(square, player, orig_player, orig_board, depth, threats, up
 	board[square.row + square.col * N_ROWS] = player;
 	player = other(player);
 
-	// TODO update threats here?
+	// TODO for efficiency, update threats here?
 
 	const result = check_result(square.row, square.col, board).result;
 	if (result === RESULT.DRAW) {
@@ -193,7 +198,7 @@ function minimax_rec(square, player, orig_player, orig_board, depth, threats, up
 	for (var i = 0; i < options.length; i++) {
 		if (depth === SEARCH_DEPTH) {
 			// eval
-			const eval_result = monte_carlo(square, player, board, threats, updated);
+			var eval_result = monte_carlo(options[i], player, board, threats, updated);
 			if (player === orig_player) {
 				vals.push(eval_result);
 			} else {
@@ -210,7 +215,6 @@ function minimax_rec(square, player, orig_player, orig_board, depth, threats, up
 		player === orig_player ? 
 		Math.max.apply(null, vals) : 
 		Math.min.apply(null, vals) ;
-
 	return to_return;
 }
 
@@ -219,8 +223,6 @@ function minimax(square, player, board, threats, updated) {
 	console.log(square + " -> " + val);
 	return val;
 }
-
-
 
 // const N_TRIALS = 100;
 // function time() {
