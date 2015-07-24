@@ -48,34 +48,10 @@ function unfilled_row(col, board) {
 }
 
 function update_threats(board, threats) {
-	function mark_threats(slice) {
-		// a threat means 4 consecutive squares with 
-		// 3 of one color + 1 empty square 
-		const vals = new Uint8Array(slice.length);
-		for (var i=0; i < slice.length; i++) {
-			vals[i] = board[slice[i].row + slice[i].col * N_ROWS];
-		}
-
-		for (var i=0; i<slice.length-3; i++) {
-			var sum = vals[i] + vals[i+1] + vals[i+2] + vals[i+3];
-			if (sum === 3) {
-				var open_square =
-					!vals[i] ? slice[i] :
-					!vals[i+1] ? slice[i+1] :
-					!vals[i+2] ? slice[i+2] :
-					slice[i+3] ;
-				threats[open_square.row + open_square.col * N_ROWS] = YELLOW;
-			}
-			else if (sum === 30) {
-				var open_square =
-					!vals[i] ? slice[i] :
-					!vals[i+1] ? slice[i+1] :
-					!vals[i+2] ? slice[i+2] :
-					slice[i+3] ;
-				threats[open_square.row + open_square.col * N_ROWS] = RED;
-			}
-		}
-	}
+	// a threat means 4 consecutive squares with 
+	// 3 of one color + 1 empty square 
+	//
+	// heavily inlined after profiling
 
 	// scan for new moves
 	for (var i = 0; i < board.length; i++) {
@@ -83,16 +59,37 @@ function update_threats(board, threats) {
 			// found a new move
 			last_updated[i] = true;
 
-			var row = i % N_ROWS;
-			var col = ~~(i / N_ROWS); // integer division
+			var slices = slice_lookup[i];
+			for (var s = 0; s < slices.length; s++) {
+				var slice = slices[s];
+				for (var i=0; i<slice.length-3; i++) {
+					var sum = 
+						board[slice[i].row + slice[i].col * N_ROWS] + 
+						board[slice[i+1].row + slice[i+1].col * N_ROWS] + 
+						board[slice[i+2].row + slice[i+2].col * N_ROWS] + 
+						board[slice[i+3].row + slice[i+3].col * N_ROWS];
 
-			var slices = slice_lookup[row + col*N_ROWS];
-			mark_threats(slices[0]);
-			mark_threats(slices[1]);
-			mark_threats(slices[2]);
-			mark_threats(slices[3]);
+					if (sum === 3 || sum === 30) {
+						var open_square =
+							!board[slice[i].row + slice[i].col * N_ROWS] ? slice[i] :
+							!board[slice[i+1].row + slice[i+1].col * N_ROWS] ? slice[i+1] :
+							!board[slice[i+2].row + slice[i+2].col * N_ROWS] ? slice[i+2] :
+							slice[i+3] ;
+						threats[open_square.row + open_square.col * N_ROWS] =
+							sum === 3 ? YELLOW : RED; 
+					}
+				}
+			}
 		}
 	}
+}
+
+var FAST_RAND = Math.floor(Math.random() * 65537);
+// fast, somewhat random number in [0, 10)
+// en.wikipedia.org/wiki/Lehmer_random_number_generator
+function fastRand() {
+	FAST_RAND = (75 * FAST_RAND) % 65537;
+	return FAST_RAND % 10;
 }
 
 // simple reflex agent with rules:
@@ -106,7 +103,7 @@ function reflex(square, player, board, threats) {
 	const threat_above = (square.row+1 < N_ROWS) ? 
 		threats[square.row + 1 + square.col * N_ROWS] : 0;
 
-	var val = Math.floor(Math.random() * 10); // rand < 10
+	var val = fastRand();
 	if (threat_here === player) {val += 10000; }
 	if (threat_here === other(player)) {val += 1000; }
 	if (threat_above === other(player)) {val -= 100; }
@@ -172,7 +169,7 @@ function time() {
 	}
 	console.log("average: " + sum / N_TRIALS);
 }
- time();
+// time();
 
 
 
