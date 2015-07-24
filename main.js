@@ -55,7 +55,7 @@ function onClick(e) {
 
 	var col = Math.floor((x - ORIGIN_X) / SQUARE_SIDE);
 	if (col < 0 || col >= N_COLS) {
-		message("click out of bounds");
+		message("click on the board somewhere");
 		return;
 	} 
 
@@ -66,7 +66,7 @@ function onClick(e) {
 	}
 
 	if (row === N_ROWS) {
-		message("column is filled already");
+		message("that column is filled");
 		return;
 	}
 	main_loop(row, col);
@@ -107,7 +107,7 @@ function end(result_check) {
 }
 
 document.addEventListener("click", onClick);
-message("click anywhere to drop a piece");
+message("click on a column to drop a piece");
 function main_loop(row, col) {
 	message("");
 	global_board[row + col * N_ROWS] = global_player;

@@ -1,25 +1,19 @@
 const global_threats = new Uint8Array(N_ROWS * N_COLS);
 const last_updated = new Uint8Array(N_ROWS * N_COLS);
 
-const EVAL_FUNCTION = monte_carlo;
+const EVAL_FUNCTION = minimax;
 const MONTE_CARLO_TRIALS = 500;
-const SEARCH_DEPTH = 3;
+const SEARCH_DEPTH = 6;
 
 function choose_move(player, board) {
+	console.log("new turn!");
 	return choose_move_with_eval(player, board, EVAL_FUNCTION);
 }
 
 function choose_move_with_eval(player, board, eval_function) {
 	update_threats(board, global_threats);
 
-	var options = [];
-	for (var col=0; col<N_COLS; col++) {
-		var row = unfilled_row(col, board);
-		if (row !== null) {
-			options.push(new Point(row, col));
-		}
-	}
-	if (options.length === 0) { throw "board unexpectedly filled"; }
+	var options = possible_moves(board);
 
 	var vals = [];
 	for (var i = 0; i<options.length; i++) {
@@ -35,7 +29,7 @@ function choose_move_with_eval(player, board, eval_function) {
 			return options[i];
 		}
 	}
-	throw "oops";
+	throw "oops " + vals;
 }
 
 function unfilled_row(col, board) {
@@ -45,6 +39,19 @@ function unfilled_row(col, board) {
 		}
 	}
 	return null;
+}
+function possible_moves(board) {
+	var options = [];
+	for (var col=0; col<N_COLS; col++) {
+		var row = unfilled_row(col, board);
+		if (row !== null) {
+			options.push(new Point(row, col));
+		}
+	}
+	if (options.length === 0) { 
+		throw "board unexpectedly filled"; 
+	}
+	return options;
 }
 
 function update_threats(board, threats) {
@@ -146,7 +153,6 @@ function monte_carlo(square, orig_player, orig_board, orig_threats) {
 		var winner = (
 			result === RESULT.YELLOW_WINS ? YELLOW :
 			result === RESULT.RED_WINS ? RED : 0);
-
 		if (orig_player === winner) {
 			score += 1;
 		} else if (other(orig_player) === winner) {
@@ -156,19 +162,66 @@ function monte_carlo(square, orig_player, orig_board, orig_threats) {
 	return score;
 }
 
-const N_TRIALS = 100;
-function time() {
-	console.log("timing " + N_TRIALS);
-	var sum = 0;
-	for (var t=0; t<N_TRIALS; t++) {
-		var start = new Date().getTime();
-		choose_move(YELLOW, global_board);
-		var stop = new Date().getTime();
-		console.log("elapsed: " + (stop - start));
-		sum += (stop - start);
+
+function minimax_rec(square, player, orig_player, orig_board, depth) {
+	// simulate the move
+	// TODO: this is shared with monte carlo above
+	const board = clone(orig_board);
+	board[square.row + square.col * N_ROWS] = player;
+	player = other(player);
+
+	const result = check_result(square.row, square.col, board).result;
+	if (result === RESULT.DRAW) {
+		return 0;
+	} 
+	if (result !== RESULT.CONTINUE) {
+		const winner = (
+			result === RESULT.YELLOW_WINS ? YELLOW :
+			result === RESULT.RED_WINS ? RED : 0);
+		return orig_player === winner ? 1 : -1;
 	}
-	console.log("average: " + sum / N_TRIALS);
+
+	if (depth === SEARCH_DEPTH) {
+		return 0;
+	}
+
+	const options = possible_moves(board);
+	var vals = []
+	for (var i = 0; i < options.length; i++) {
+		var val = minimax_rec(options[i], player, orig_player, board, depth+1);
+		vals.push(val);
+	}
+
+	// TODO figure out this weirdness
+	var to_return = 
+		player === orig_player ? 
+		Math.max.apply(null, vals) : 
+		Math.min.apply(null, vals) ;
+
+	return to_return;
 }
+
+function minimax(square, player, board, threats) {
+	var val = minimax_rec(square, player, player, board, 1);
+	console.log(square + " -> " + val);
+	return val;
+}
+
+
+
+// const N_TRIALS = 100;
+// function time() {
+// 	console.log("timing " + N_TRIALS);
+// 	var sum = 0;
+// 	for (var t=0; t<N_TRIALS; t++) {
+// 		var start = new Date().getTime();
+// 		choose_move(YELLOW, global_board);
+// 		var stop = new Date().getTime();
+// 		console.log("elapsed: " + (stop - start));
+// 		sum += (stop - start);
+// 	}
+// 	console.log("average: " + sum / N_TRIALS);
+// }
 // time();
 
 
