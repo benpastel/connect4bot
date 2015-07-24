@@ -27,66 +27,105 @@ Point.prototype.toString = function pointToString() {
 	return " (" + this.row + "," + this.col + ") ";
 }
 
-function get(row, col, board) {
-	if (row < 0 || col < 0 || row >= N_ROWS || col >= N_COLS) {
-		throw "index out of bounds " + [row, col];
-	}
-	return board[row + col * N_ROWS];
-}
-function set(val, row, col, board) {
-	if (row < 0 || col < 0 || row >= N_ROWS || col >= N_COLS) {
-		throw "index out of bounds " + [row, col];
-	}
-	if (val != 0 && val != YELLOW && val != RED) {
-		throw "bad val " + val;
-	}
-	board[row + col * N_ROWS] = val;
-}
+// a board where each square is a pointer to the slices that square belongs to
+// a slice is a line of squares that includes this square
+const slice_lookup = [];
+function init_slices() {
+	const row_lookup = [];
+	const col_lookup = [];
+	const asc_lookup = [];
+	const desc_lookup = [];
 
-// returns an array of slices
-// where a slice is an array of points passing through 
-// the original point
-// 
-// TODO: memoize?
-function slices(check_row, check_col, board) {
-	var row_squares = []
-	for (var col = 0; col < N_COLS; col++) {
-		row_squares.push(new Point(check_row, col));
-	}
-
-	var col_squares = []
+	// rows
 	for (var row = 0; row < N_ROWS; row++) {
-		col_squares.push(new Point(row, check_col));
+		var slice = [];
+		for (var col = 0; col < N_COLS; col++) {
+			slice.push(new Point(row, col));
+			row_lookup[row + col * N_ROWS] = slice;
+		}
 	}
 
-	var asc_diag = [];
-	(function() {
-		var min = Math.min(check_row, check_col);
-		var row = check_row - min;
-		var col = check_col - min;
-		while (row < N_ROWS && col < N_COLS) {
-			asc_diag.push(new Point(row, col));
+	// columns
+	for (var col = 0; col < N_COLS; col++) {
+		var slice = [];
+		for (var row = 0; row < N_ROWS; row++) {
+			slice.push(new Point(row, col));
+			col_lookup[row + col * N_ROWS] = slice; 
+		}
+	}
+	
+	// ascending diagonals
+	// get all the ones that hit the left wall
+	for (var start_row = 0; start_row < N_ROWS; start_row++) {
+		var slice = [];
+		var row = start_row;
+		var col = 0;
+		while (col < N_COLS && row < N_ROWS) {
+			slice.push(new Point(row, col));
+			asc_lookup[row + col * N_ROWS] = slice;
 			row++;
 			col++;
 		}
-	})();
-
-	var desc_diag = [];
-	(function() {
-		var adjust = Math.min(check_row, (N_COLS - check_col - 1));
-		var row = check_row - adjust;
-		var col = check_col + adjust;
-		while (row < N_ROWS && col >= 0) {
-			desc_diag.push(new Point(row, col));
+	}
+	// get all the ones that hit the bottom. don't double count the one overlap
+	for (var start_col = 1; start_col < N_COLS; start_col++) {
+		var slice = [];
+		var row = 0;
+		var col = start_col;
+		while (col < N_COLS && row < N_ROWS) {
+			slice.push(new Point(row, col));
+			asc_lookup[row + col * N_ROWS] = slice;
 			row++;
-			col--;
+			col++;
 		}
-	})();
-	return [
-		row_squares, col_squares, asc_diag, desc_diag
-	];
-}
+	}
 
+	// descending diagonals
+	// get all the ones that hit the left wall
+	for (var start_row = 0; start_row < N_ROWS; start_row++) {
+		var slice = [];
+		var row = start_row;
+		var col = 0;
+		while (row >= 0 && col < N_COLS) {
+			slice.push(new Point(row, col));
+			desc_lookup[row + col * N_ROWS] = slice;
+			row--;
+			col++;
+		}
+	}
+	// get all the ones that hit the top. don't double count the one overlap.
+	for (var start_col = 1; start_col < N_COLS; start_col++) {
+		var slice = [];
+		var row = N_ROWS-1;
+		var col = start_col;
+		while (row >= 0 && col < N_COLS) {
+			slice.push(new Point(row, col));
+			desc_lookup[row + col * N_ROWS] = slice;
+			row--;
+			col++;
+		}
+	}
+
+	// package up the results for each square
+	for (var idx = 0; idx < N_ROWS * N_COLS; idx++) {
+		slice_lookup[idx] = [
+			row_lookup[idx],
+			col_lookup[idx],
+			asc_lookup[idx],
+			desc_lookup[idx]
+		];
+	}
+}
+init_slices();
+
+function isFilled(board) {
+	for (var idx = N_ROWS-1; idx < board.length; idx += N_ROWS) {
+		if (!board[idx]) {
+			return false;
+		}
+	}
+	return true;
+}
 const RESULT = {
 	CONTINUE : 0,
 	YELLOW_WINS : 1,
@@ -94,14 +133,18 @@ const RESULT = {
 	DRAW : 3
 };
 function check_result(row, col, board) {
-	const sliced = slices(row, col, board);
-	for (var s=0; s<sliced.length; s++) {
-		var slice = sliced[s];
-		var vals = slice.map(function(square){
-			return get(square.row, square.col, board);
-		});
+	const slices = slice_lookup[row + col*N_ROWS];
+
+	for (var s=0; s<slices.length; s++) {
+		var slice = slices[s];
+
 		for (var i = 0; i < slice.length - 3; i++) {
-			var sum = vals[i] + vals[i+1] + vals[i+2] + vals[i+3];
+			var sum = 
+				board[slice[i].row + slice[i].col * N_ROWS] + 
+				board[slice[i+1].row + slice[i+1].col * N_ROWS] + 
+				board[slice[i+2].row + slice[i+2].col * N_ROWS] + 
+				board[slice[i+3].row + slice[i+3].col * N_ROWS];
+				
 			if (sum === 4) {
 				return {
 					result: RESULT.YELLOW_WINS,
@@ -116,21 +159,8 @@ function check_result(row, col, board) {
 			}
 		}
 	}
-
-	// are all of the top rows full?
-	for (var col = 0; col < N_COLS; col++) {
-		if (get(N_ROWS-1, col, board) === 0) {
-			break;
-		}
-	}
-	if (col === N_COLS) { 
-		return {
-			result: RESULT.DRAW,
-			squares: null
-		};
-	}
 	return {
-		result: RESULT.CONTINUE,
+		result: isFilled(board) ? RESULT.DRAW : RESULT.CONTINUE,
 		squares: null
 	};
 }
@@ -139,7 +169,7 @@ function board_to_string(board) {
 	var string = "\n";
 	for (var row = N_ROWS-1; row >= 0; row--) {
 		for (var col = 0; col < N_COLS; col++) {
-			var val = get(row, col, board);
+			var val = board[row + col * N_ROWS];
 			if (val === YELLOW) {
 				string += "Y\t"; 
 			} else if (val === RED) {

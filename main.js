@@ -60,7 +60,7 @@ function onClick(e) {
 	} 
 
 	for (var row = 0; row < N_ROWS; row++) {
-		if (get(row, col, global_board) === 0) {
+		if (!global_board[row + col * N_ROWS]) {
 			break;
 		}
 	}
@@ -110,7 +110,7 @@ document.addEventListener("click", onClick);
 message("click anywhere to drop a piece");
 function main_loop(row, col) {
 	message("");
-	set(global_player, row, col, global_board);
+	global_board[row + col * N_ROWS] = global_player;
 
 	updateDisplay(row, col, global_player);
 

@@ -2,10 +2,10 @@ const global_threats = new Uint8Array(N_ROWS * N_COLS);
 const last_updated = new Uint8Array(N_ROWS * N_COLS);
 
 const EVAL_FUNCTION = monte_carlo;
-const MONTE_CARLO_TRIALS = 100;
+const MONTE_CARLO_TRIALS = 500;
+const SEARCH_DEPTH = 3;
 
 function choose_move(player, board) {
-	console.log("new turn")
 	return choose_move_with_eval(player, board, EVAL_FUNCTION);
 }
 
@@ -22,23 +22,25 @@ function choose_move_with_eval(player, board, eval_function) {
 	if (options.length === 0) { throw "board unexpectedly filled"; }
 
 	var vals = [];
-	options.forEach(function(square){
-		vals.push(eval_function(square, player, board, global_threats));
-	})
+	for (var i = 0; i<options.length; i++) {
+		vals[i] = eval_function(options[i], player, board, global_threats);
+	}
+
 	var max = vals[0];
-	var best_i = 0;
-	for (var i=1; i<vals.length; i++) {
-		if (vals[i] > max) {
-			max = vals[i];
-			best_i = i;
+	for (var i=1; i < vals.length; i++) {
+		max = Math.max(max, vals[i]);
+	}
+	for (var i=0; i < vals.length; i++) {
+		if (vals[i] === max) {
+			return options[i];
 		}
 	}
-	return options[best_i];
+	throw "oops";
 }
 
 function unfilled_row(col, board) {
 	for (var row = 0; row < N_ROWS; row++) {
-		if (get(row, col, board) === 0) {
+		if (!board[row + col * N_ROWS]) {
 			return row;
 		}
 	}
@@ -46,24 +48,13 @@ function unfilled_row(col, board) {
 }
 
 function update_threats(board, threats) {
-	// scan for new moves since we last checked
-	var new_moves = []
-	for (var col = 0; col < N_COLS; col++) {
-		for (var row = 0; row < N_ROWS; row++) {
-			var val = get(row, col, board);
-			if (get(row, col, last_updated) !== val) {
-				new_moves.push(new Point(row, col));
-				set(val, row, col, last_updated);
-			}
-		}
-	}
 	function mark_threats(slice) {
 		// a threat means 4 consecutive squares with 
 		// 3 of one color + 1 empty square 
-
-		const vals = slice.map(function(square){
-			return get(square.row, square.col, board);
-		});
+		const vals = new Uint8Array(slice.length);
+		for (var i=0; i < slice.length; i++) {
+			vals[i] = board[slice[i].row + slice[i].col * N_ROWS];
+		}
 
 		for (var i=0; i<slice.length-3; i++) {
 			var sum = vals[i] + vals[i+1] + vals[i+2] + vals[i+3];
@@ -73,7 +64,7 @@ function update_threats(board, threats) {
 					!vals[i+1] ? slice[i+1] :
 					!vals[i+2] ? slice[i+2] :
 					slice[i+3] ;
-				set(YELLOW, open_square.row, open_square.col, threats);
+				threats[open_square.row + open_square.col * N_ROWS] = YELLOW;
 			}
 			else if (sum === 30) {
 				var open_square =
@@ -81,12 +72,26 @@ function update_threats(board, threats) {
 					!vals[i+1] ? slice[i+1] :
 					!vals[i+2] ? slice[i+2] :
 					slice[i+3] ;
-				set(RED, open_square.row, open_square.col, threats);
+				threats[open_square.row + open_square.col * N_ROWS] = RED;
 			}
 		}
 	}
-	for (var i = 0; i < new_moves.length; i++) {
-		slices(new_moves[i].row, new_moves[i].col).forEach(mark_threats);
+
+	// scan for new moves
+	for (var i = 0; i < board.length; i++) {
+		if (board[i] && !last_updated[i]) {
+			// found a new move
+			last_updated[i] = true;
+
+			var row = i % N_ROWS;
+			var col = ~~(i / N_ROWS); // integer division
+
+			var slices = slice_lookup[row + col*N_ROWS];
+			mark_threats(slices[0]);
+			mark_threats(slices[1]);
+			mark_threats(slices[2]);
+			mark_threats(slices[3]);
+		}
 	}
 }
 
@@ -97,9 +102,9 @@ function update_threats(board, threats) {
 // (4) don't play if you have a threat above you
 // (5) choose randomly
 function reflex(square, player, board, threats) {
-	const threat_here = get(square.row, square.col, threats);
+	const threat_here = threats[square.row + square.col * N_ROWS];
 	const threat_above = (square.row+1 < N_ROWS) ? 
-		get(square.row+1, square.col, threats) : 0;
+		threats[square.row + 1 + square.col * N_ROWS] : 0;
 
 	var val = Math.floor(Math.random() * 10); // rand < 10
 	if (threat_here === player) {val += 10000; }
@@ -127,13 +132,13 @@ function monte_carlo(square, orig_player, orig_board, orig_threats) {
 		var threats = clone(orig_threats);
 		var player = other(orig_player);
 
-		set(orig_player, square.row, square.col, board);
+		board[square.row + square.col * N_ROWS] = orig_player;
 		var result = check_result(square.row, square.col, board).result;
 
 		while (result === RESULT.CONTINUE) {
 			var move = choose_move_with_eval(player, board, reflex);
 
-			set(player, move.row, move.col, board);
+			board[move.row + move.col * N_ROWS] = player;
 
 			var result = check_result(move.row, move.col, board).result;
 
@@ -151,6 +156,23 @@ function monte_carlo(square, orig_player, orig_board, orig_threats) {
 			score -= 1;
 		}	
 	}
-	console.log("square " + square + " has score " + score);
 	return score;
 }
+
+const N_TRIALS = 100;
+function time() {
+	console.log("timing " + N_TRIALS);
+	var sum = 0;
+	for (var t=0; t<N_TRIALS; t++) {
+		var start = new Date().getTime();
+		choose_move(YELLOW, global_board);
+		var stop = new Date().getTime();
+		console.log("elapsed: " + (stop - start));
+		sum += (stop - start);
+	}
+	console.log("average: " + sum / N_TRIALS);
+}
+ time();
+
+
+
