@@ -2,8 +2,8 @@ const global_threats = new Uint8Array(N_ROWS * N_COLS);
 const last_updated = new Uint8Array(N_ROWS * N_COLS);
 
 const EVAL_FUNCTION = minimax;
-const MONTE_CARLO_TRIALS = 500;
-const SEARCH_DEPTH = 6;
+const MONTE_CARLO_TRIALS = 10;
+const SEARCH_DEPTH = 3;
 
 function choose_move(player, board) {
 	console.log("new turn!");
@@ -159,13 +159,12 @@ function monte_carlo(square, orig_player, orig_board, orig_threats) {
 			score -= 1;
 		}	
 	}
-	return score;
+	return score / MONTE_CARLO_TRIALS;
 }
 
 
-function minimax_rec(square, player, orig_player, orig_board, depth) {
+function minimax_rec(square, player, orig_player, orig_board, depth, threats) {
 	// simulate the move
-	// TODO: this is shared with monte carlo above
 	const board = clone(orig_board);
 	board[square.row + square.col * N_ROWS] = player;
 	player = other(player);
@@ -178,18 +177,24 @@ function minimax_rec(square, player, orig_player, orig_board, depth) {
 		const winner = (
 			result === RESULT.YELLOW_WINS ? YELLOW :
 			result === RESULT.RED_WINS ? RED : 0);
-		return orig_player === winner ? 1 : -1;
-	}
-
-	if (depth === SEARCH_DEPTH) {
-		return 0;
+		return orig_player === winner ? 10 : -10;
 	}
 
 	const options = possible_moves(board);
 	var vals = []
 	for (var i = 0; i < options.length; i++) {
-		var val = minimax_rec(options[i], player, orig_player, board, depth+1);
-		vals.push(val);
+		if (depth === SEARCH_DEPTH) {
+			// eval
+			const eval_result = monte_carlo(square, player, board, threats);
+			if (player === orig_player) {
+				vals.push(eval_result);
+			} else {
+				vals.push(-eval_result);
+			}
+		} else {
+			var val = minimax_rec(options[i], player, orig_player, board, depth+1, threats);
+			vals.push(val);
+		}
 	}
 
 	// TODO figure out this weirdness
@@ -202,7 +207,7 @@ function minimax_rec(square, player, orig_player, orig_board, depth) {
 }
 
 function minimax(square, player, board, threats) {
-	var val = minimax_rec(square, player, player, board, 1);
+	var val = minimax_rec(square, player, player, board, 1, threats);
 	console.log(square + " -> " + val);
 	return val;
 }
