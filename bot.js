@@ -1,23 +1,26 @@
 const global_threats = new Uint8Array(N_ROWS * N_COLS);
-const last_updated = new Uint8Array(N_ROWS * N_COLS);
+const global_threats_updated = new Uint8Array(N_ROWS * N_COLS);
 
-const EVAL_FUNCTION = minimax;
-const MONTE_CARLO_TRIALS = 10;
+const EVAL_FUNCTION = monte_carlo;
+const MONTE_CARLO_TRIALS = 20;
 const SEARCH_DEPTH = 3;
 
+// single entry point to this file
 function choose_move(player, board) {
 	console.log("new turn!");
-	return choose_move_with_eval(player, board, EVAL_FUNCTION);
+	return choose_move_with_eval(player, board, EVAL_FUNCTION, 
+		global_threats, global_threats_updated);
 }
 
-function choose_move_with_eval(player, board, eval_function) {
-	update_threats(board, global_threats);
+function choose_move_with_eval(player, board, eval_function, threats, updated) {
+
+	update_threats(board, threats, updated);
 
 	var options = possible_moves(board);
 
 	var vals = [];
 	for (var i = 0; i<options.length; i++) {
-		vals[i] = eval_function(options[i], player, board, global_threats);
+		vals[i] = eval_function(options[i], player, board, threats, updated);
 	}
 
 	var max = vals[0];
@@ -54,7 +57,7 @@ function possible_moves(board) {
 	return options;
 }
 
-function update_threats(board, threats) {
+function update_threats(board, threats, updated) {
 	// a threat means 4 consecutive squares with 
 	// 3 of one color + 1 empty square 
 	//
@@ -62,9 +65,9 @@ function update_threats(board, threats) {
 
 	// scan for new moves
 	for (var i = 0; i < board.length; i++) {
-		if (board[i] && !last_updated[i]) {
+		if (board[i] && !updated[i]) {
 			// found a new move
-			last_updated[i] = true;
+			updated[i] = true;
 
 			var slices = slice_lookup[i];
 			for (var s = 0; s < slices.length; s++) {
@@ -105,7 +108,7 @@ function fastRand() {
 // (3) don't play if your opponent has a threat above you
 // (4) don't play if you have a threat above you
 // (5) choose randomly
-function reflex(square, player, board, threats) {
+function reflex(square, player, board, threats, updated) {
 	const threat_here = threats[square.row + square.col * N_ROWS];
 	const threat_above = (square.row+1 < N_ROWS) ? 
 		threats[square.row + 1 + square.col * N_ROWS] : 0;
@@ -114,7 +117,7 @@ function reflex(square, player, board, threats) {
 	if (threat_here === player) {val += 10000; }
 	if (threat_here === other(player)) {val += 1000; }
 	if (threat_above === other(player)) {val -= 100; }
-	if (threat_above === player) {val += 10; }
+	if (threat_above === player) {val -= 10; }
 
 	return val;
 }
@@ -128,19 +131,21 @@ function clone(a) {
 }
 
 // play reflex agent against itself a bunch of times
-function monte_carlo(square, orig_player, orig_board, orig_threats) {
+function monte_carlo(square, orig_player, orig_board, orig_threats, orig_updated) {
 
 	var score = 0;
 	for (var trial = 0; trial < MONTE_CARLO_TRIALS; trial++) {
 		var board = clone(orig_board);
 		var threats = clone(orig_threats);
+		var updated = clone(orig_updated);
 		var player = other(orig_player);
 
 		board[square.row + square.col * N_ROWS] = orig_player;
 		var result = check_result(square.row, square.col, board).result;
+		update_threats(board, threats, updated);
 
 		while (result === RESULT.CONTINUE) {
-			var move = choose_move_with_eval(player, board, reflex);
+			var move = choose_move_with_eval(player, board, reflex, threats, updated);
 
 			board[move.row + move.col * N_ROWS] = player;
 
@@ -148,7 +153,7 @@ function monte_carlo(square, orig_player, orig_board, orig_threats) {
 
 			player = other(player);
 
-			update_threats(board, threats);
+			update_threats(board, threats, updated);
 		}
 		var winner = (
 			result === RESULT.YELLOW_WINS ? YELLOW :
@@ -159,15 +164,18 @@ function monte_carlo(square, orig_player, orig_board, orig_threats) {
 			score -= 1;
 		}	
 	}
+	console.log(square + " -> " + score / MONTE_CARLO_TRIALS);
 	return score / MONTE_CARLO_TRIALS;
 }
 
 
-function minimax_rec(square, player, orig_player, orig_board, depth, threats) {
+function minimax_rec(square, player, orig_player, orig_board, depth, threats, updated) {
 	// simulate the move
 	const board = clone(orig_board);
 	board[square.row + square.col * N_ROWS] = player;
 	player = other(player);
+
+	// TODO update threats here?
 
 	const result = check_result(square.row, square.col, board).result;
 	if (result === RESULT.DRAW) {
@@ -185,14 +193,14 @@ function minimax_rec(square, player, orig_player, orig_board, depth, threats) {
 	for (var i = 0; i < options.length; i++) {
 		if (depth === SEARCH_DEPTH) {
 			// eval
-			const eval_result = monte_carlo(square, player, board, threats);
+			const eval_result = monte_carlo(square, player, board, threats, updated);
 			if (player === orig_player) {
 				vals.push(eval_result);
 			} else {
 				vals.push(-eval_result);
 			}
 		} else {
-			var val = minimax_rec(options[i], player, orig_player, board, depth+1, threats);
+			var val = minimax_rec(options[i], player, orig_player, board, depth+1, threats, updated);
 			vals.push(val);
 		}
 	}
@@ -206,8 +214,8 @@ function minimax_rec(square, player, orig_player, orig_board, depth, threats) {
 	return to_return;
 }
 
-function minimax(square, player, board, threats) {
-	var val = minimax_rec(square, player, player, board, 1, threats);
+function minimax(square, player, board, threats, updated) {
+	var val = minimax_rec(square, player, player, board, 1, threats, updated);
 	console.log(square + " -> " + val);
 	return val;
 }
