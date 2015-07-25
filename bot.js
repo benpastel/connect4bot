@@ -3,7 +3,7 @@ const global_threats_updated = new Uint8Array(N_ROWS * N_COLS);
 
 const EVAL_FUNCTION = minimax;
 const MONTE_CARLO_TRIALS = 20;
-const SEARCH_DEPTH = 3;
+const SEARCH_DEPTH = 1;
 
 // single entry point to this file
 function choose_move(player, board) {
@@ -27,7 +27,7 @@ function choose_move_with_eval(eval_function, state) {
 
 	var vals = [];
 	for (var i = 0; i<options.length; i++) {
-		vals[i] = eval_function(options[i], state);
+		vals[i] = eval_function(options[i], state.player, state);
 	}
 
 	var max = vals[0];
@@ -115,11 +115,10 @@ function fastRand() {
 // (3) don't play if your opponent has a threat above you
 // (4) don't play if you have a threat above you
 // (5) choose randomly
-function reflex(square, state) {
+function reflex(square, player, state) {
 	const threat_here = state.threats[square.row + square.col * N_ROWS];
 	const threat_above = (square.row+1 < N_ROWS) ? 
 		state.threats[square.row + 1 + square.col * N_ROWS] : 0;
-	const player = state.player;
 
 	var val = fastRand();
 	if (threat_here === player) {val += 10000; }
@@ -164,33 +163,26 @@ function clone_array(a) {
 }
 
 // play reflex agent against itself a bunch of times
-// TODO: separate old_state and orig_player
-function monte_carlo(square, orig_state) {
+function monte_carlo(square, orig_player, old_state) {
 
 	var score = 0;
 	for (var trial = 0; trial < MONTE_CARLO_TRIALS; trial++) {
-		var state = orig_state.clone();
+		var state = old_state.clone();
 		var result = state.move(square);
 
-		// prefer a hard result to a monte carlo result
-		// TODO cleanup this area!
-		var hard_result = true;
-
+		var first_turn = true;
 		while (result === RESULT.CONTINUE) {
-			hard_result = false;
+			first_turn = false;
 
 			var move = choose_move_with_eval(reflex, state);
 
-			result = state.move(move).result;
+			result = state.move(move);
 		}
-		var winner = (
-			result === RESULT.YELLOW_WINS ? YELLOW :
-			result === RESULT.RED_WINS ? RED : 0);
-
-		if (orig_state.player === winner) {
-			score += hard_result ? 10 : 1;
-		} else if (other(orig_state.player) === winner) {
-			score -= hard_result ? 10 : 1;
+		var winner = to_winner(result);
+		if (winner === orig_player) {
+			score += first_turn ? 10 : 1;
+		} else if (winner === other(orig_player)) {
+			score -= first_turn ? 10 : 1;
 		}	
 	}
 	return score / MONTE_CARLO_TRIALS;
@@ -204,42 +196,31 @@ function minimax_rec(square, depth, orig_player, old_state) {
 		return 0;
 	} 
 	if (result !== RESULT.CONTINUE) {
-		const winner = (
-			result === RESULT.YELLOW_WINS ? YELLOW :
-			result === RESULT.RED_WINS ? RED : 0);
-		return orig_player === winner ? 10 : -10;
+		return orig_player === to_winner(result) ? 10 : -10;
 	}
 
 	const options = possible_moves(state.board);
-	var vals = []
+	var max = -Infinity;
+	var min = +Infinity;
 	for (var i = 0; i < options.length; i++) {
-		if (depth === SEARCH_DEPTH) {
-			// eval
-			var eval_result = monte_carlo(options[i], state);
-			if (state.player === orig_player) {
-				vals.push(eval_result);
-			} else {
-				vals.push(-eval_result);
-			}
-		} else {
-			var val = minimax_rec(options[i], depth+1, orig_player, state);
-			vals.push(val);
-		}
+		var val = depth === SEARCH_DEPTH ?
+			monte_carlo(options[i], orig_player, state) :
+			minimax_rec(options[i], depth+1, orig_player, state);
+		max = Math.max(max, val);
+		min = Math.min(min, val);
 	}
-
-	// TODO figure out this weirdness
-	// why does this break when I return it directly???
-	var to_return = 
-		state.player === orig_player ? 
-		Math.max.apply(null, vals) : 
-		Math.min.apply(null, vals) ;
-	return to_return;
+	return state.player === orig_player ? max : min;
 }
 
-function minimax(square, state) {
-	var val = minimax_rec(square, 1, state.player, state);
+function minimax(square, player, state) {
+	var val = minimax_rec(square, 1, player, state);
 	console.log(square + " -> " + val);
 	return val;
+}
+
+function to_winner(result) {
+	return result === RESULT.YELLOW_WINS ? YELLOW :
+		result === RESULT.RED_WINS ? RED : 0;
 }
 
 // const N_TRIALS = 10;

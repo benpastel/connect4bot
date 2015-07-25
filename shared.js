@@ -140,7 +140,7 @@ const RESULT = {
 	DRAW : 3
 };
 function check_result(row, col, board) {
-	return check_result_with_squares().result;
+	return check_result_with_squares(row, col, board).result;
 }
 // in the case of a win, also includes the winning squares
 function check_result_with_squares(row, col, board) {
