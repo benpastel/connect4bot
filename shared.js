@@ -140,6 +140,10 @@ const RESULT = {
 	DRAW : 3
 };
 function check_result(row, col, board) {
+	return check_result_with_squares().result;
+}
+// in the case of a win, also includes the winning squares
+function check_result_with_squares(row, col, board) {
 	const slices = slice_lookup[row + col*N_ROWS];
 
 	for (var s=0; s<slices.length; s++) {

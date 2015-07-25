@@ -120,7 +120,7 @@ function main_loop(row, col) {
 
 	updateDisplay(row, col, global_player);
 
-	const result_check = check_result(row, col, global_board);
+	const result_check = check_result_with_squares(row, col, global_board);
 	if (result_check.result !== RESULT.CONTINUE) {
 		end(result_check);
 	}

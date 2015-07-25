@@ -145,8 +145,6 @@ State.prototype.clone = function() {
 		clone_array(this.updated));
 }
 
-// returns {result: <result>, squares: <squares>}
-// TODO: refactor the way results are returned, only need the squares sometimes!
 State.prototype.move = function(square) {
 	this.board[square.row + square.col * N_ROWS] = this.player;
 
@@ -172,7 +170,7 @@ function monte_carlo(square, orig_state) {
 	var score = 0;
 	for (var trial = 0; trial < MONTE_CARLO_TRIALS; trial++) {
 		var state = orig_state.clone();
-		var result = state.move(square).result;
+		var result = state.move(square);
 
 		// prefer a hard result to a monte carlo result
 		// TODO cleanup this area!
@@ -200,7 +198,7 @@ function monte_carlo(square, orig_state) {
 
 function minimax_rec(square, depth, orig_player, old_state) {
 	const state = old_state.clone();
-	const result = state.move(square).result;
+	const result = state.move(square);
 
 	if (result === RESULT.DRAW) {
 		return 0;
