@@ -9,7 +9,14 @@ const RED = 10;
 
 var global_player = YELLOW;
 var global_game_over = false;
-var global_moves = 0;
+
+function reset_shared_state() {
+	global_player = YELLOW;
+	global_game_over = false;
+	for (var i = 0; i<global_board.length; i++) {
+		global_board[i] = 0;
+	}
+}
 
 // TODO: set via UI
 function is_bot(player) {
@@ -144,7 +151,7 @@ function check_result(row, col, board) {
 				board[slice[i+1].row + slice[i+1].col * N_ROWS] + 
 				board[slice[i+2].row + slice[i+2].col * N_ROWS] + 
 				board[slice[i+3].row + slice[i+3].col * N_ROWS];
-				
+
 			if (sum === 4) {
 				return {
 					result: RESULT.YELLOW_WINS,

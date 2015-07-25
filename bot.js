@@ -8,19 +8,26 @@ const SEARCH_DEPTH = 3;
 // single entry point to this file
 function choose_move(player, board) {
 	console.log("new turn");
-	return choose_move_with_eval(player, board, EVAL_FUNCTION, 
-		global_threats, global_threats_updated);
+	return choose_move_with_eval(EVAL_FUNCTION,
+		new State(player, board, global_threats, global_threats_updated));
 }
 
-function choose_move_with_eval(player, board, eval_function, threats, updated) {
+function reset_bot_state() {
+	for (var i=0; i<N_ROWS * N_COLS; i++) {
+		global_threats[i] = 0;
+		global_threats_updated[i] = false;
+	}
+}
 
-	update_threats(board, threats, updated);
+function choose_move_with_eval(eval_function, state) {
+	// TODO: do I still need to update threats here?
+	update_threats(state.board, state.threats, state.updated);
 
-	var options = possible_moves(board);
+	var options = possible_moves(state.board);
 
 	var vals = [];
 	for (var i = 0; i<options.length; i++) {
-		vals[i] = eval_function(options[i], player, board, threats, updated);
+		vals[i] = eval_function(options[i], state);
 	}
 
 	var max = vals[0];
@@ -94,9 +101,9 @@ function update_threats(board, threats, updated) {
 	}
 }
 
-var FAST_RAND = Math.floor(Math.random() * 65537);
 // fast, somewhat random number in [0, 10)
 // en.wikipedia.org/wiki/Lehmer_random_number_generator
+var FAST_RAND = Math.floor(Math.random() * 65537);
 function fastRand() {
 	FAST_RAND = (75 * FAST_RAND) % 65537;
 	return FAST_RAND % 10;
@@ -108,21 +115,49 @@ function fastRand() {
 // (3) don't play if your opponent has a threat above you
 // (4) don't play if you have a threat above you
 // (5) choose randomly
-function reflex(square, player, board, threats, updated) {
-	const threat_here = threats[square.row + square.col * N_ROWS];
+function reflex(square, state) {
+	const threat_here = state.threats[square.row + square.col * N_ROWS];
 	const threat_above = (square.row+1 < N_ROWS) ? 
-		threats[square.row + 1 + square.col * N_ROWS] : 0;
+		state.threats[square.row + 1 + square.col * N_ROWS] : 0;
+	const player = state.player;
 
 	var val = fastRand();
 	if (threat_here === player) {val += 10000; }
 	if (threat_here === other(player)) {val += 1000; }
 	if (threat_above === other(player)) {val -= 100; }
 	if (threat_above === player) {val -= 10; }
-
 	return val;
 }
 
-function clone(a) {
+// player means the player whose turn it is
+function State(player, board, threats, updated) {
+	this.player = player;
+	this.board = board;
+	this.threats = threats;
+	this.updated = updated;
+}
+
+State.prototype.clone = function() {
+	return new State(
+		this.player,
+		clone_array(this.board),
+		clone_array(this.threats),
+		clone_array(this.updated));
+}
+
+// returns {result: <result>, squares: <squares>}
+// TODO: refactor the way results are returned, only need the squares sometimes!
+State.prototype.move = function(square) {
+	this.board[square.row + square.col * N_ROWS] = this.player;
+
+	this.player = other(this.player);
+
+	update_threats(this.board, this.threats, this.updated);
+
+	return check_result(square.row, square.col, this.board);
+}
+
+function clone_array(a) {
 	const b = new Uint8Array(a.length);
 	for (var i=0; i<a.length; i++) {
 		b[i] = a[i];
@@ -131,18 +166,13 @@ function clone(a) {
 }
 
 // play reflex agent against itself a bunch of times
-function monte_carlo(square, orig_player, orig_board, orig_threats, orig_updated) {
+// TODO: separate old_state and orig_player
+function monte_carlo(square, orig_state) {
 
 	var score = 0;
 	for (var trial = 0; trial < MONTE_CARLO_TRIALS; trial++) {
-		var board = clone(orig_board);
-		var threats = clone(orig_threats);
-		var updated = clone(orig_updated);
-		var player = other(orig_player);
-
-		board[square.row + square.col * N_ROWS] = orig_player;
-		var result = check_result(square.row, square.col, board).result;
-		update_threats(board, threats, updated);
+		var state = orig_state.clone();
+		var result = state.move(square).result;
 
 		// prefer a hard result to a monte carlo result
 		// TODO cleanup this area!
@@ -151,38 +181,27 @@ function monte_carlo(square, orig_player, orig_board, orig_threats, orig_updated
 		while (result === RESULT.CONTINUE) {
 			hard_result = false;
 
-			var move = choose_move_with_eval(player, board, reflex, threats, updated);
+			var move = choose_move_with_eval(reflex, state);
 
-			board[move.row + move.col * N_ROWS] = player;
-
-			var result = check_result(move.row, move.col, board).result;
-
-			player = other(player);
-
-			update_threats(board, threats, updated);
+			result = state.move(move).result;
 		}
 		var winner = (
 			result === RESULT.YELLOW_WINS ? YELLOW :
 			result === RESULT.RED_WINS ? RED : 0);
 
-		if (orig_player === winner) {
+		if (orig_state.player === winner) {
 			score += hard_result ? 10 : 1;
-		} else if (other(orig_player) === winner) {
+		} else if (other(orig_state.player) === winner) {
 			score -= hard_result ? 10 : 1;
 		}	
 	}
 	return score / MONTE_CARLO_TRIALS;
 }
 
-function minimax_rec(square, player, orig_player, orig_board, depth, threats, updated) {
-	// simulate the move
-	const board = clone(orig_board);
-	board[square.row + square.col * N_ROWS] = player;
-	player = other(player);
+function minimax_rec(square, depth, orig_player, old_state) {
+	const state = old_state.clone();
+	const result = state.move(square).result;
 
-	// TODO for efficiency, update threats here?
-
-	const result = check_result(square.row, square.col, board).result;
 	if (result === RESULT.DRAW) {
 		return 0;
 	} 
@@ -193,38 +212,39 @@ function minimax_rec(square, player, orig_player, orig_board, depth, threats, up
 		return orig_player === winner ? 10 : -10;
 	}
 
-	const options = possible_moves(board);
+	const options = possible_moves(state.board);
 	var vals = []
 	for (var i = 0; i < options.length; i++) {
 		if (depth === SEARCH_DEPTH) {
 			// eval
-			var eval_result = monte_carlo(options[i], player, board, threats, updated);
-			if (player === orig_player) {
+			var eval_result = monte_carlo(options[i], state);
+			if (state.player === orig_player) {
 				vals.push(eval_result);
 			} else {
 				vals.push(-eval_result);
 			}
 		} else {
-			var val = minimax_rec(options[i], player, orig_player, board, depth+1, threats, updated);
+			var val = minimax_rec(options[i], depth+1, orig_player, state);
 			vals.push(val);
 		}
 	}
 
 	// TODO figure out this weirdness
+	// why does this break when I return it directly???
 	var to_return = 
-		player === orig_player ? 
+		state.player === orig_player ? 
 		Math.max.apply(null, vals) : 
 		Math.min.apply(null, vals) ;
 	return to_return;
 }
 
-function minimax(square, player, board, threats, updated) {
-	var val = minimax_rec(square, player, player, board, 1, threats, updated);
+function minimax(square, state) {
+	var val = minimax_rec(square, 1, state.player, state);
 	console.log(square + " -> " + val);
 	return val;
 }
 
-// const N_TRIALS = 100;
+// const N_TRIALS = 10;
 // function time() {
 // 	console.log("timing " + N_TRIALS);
 // 	var sum = 0;

@@ -1,6 +1,8 @@
 const SQUARE_SIDE = 80;
 const ORIGIN_X = 10;
 const ORIGIN_Y = 10;
+const MAX_BOARD_X = ORIGIN_X + SQUARE_SIDE * N_COLS;
+const MAX_BOARD_Y = ORIGIN_Y + SQUARE_SIDE * N_ROWS;
 const paper = Raphael(0, 0, 1000, 1000);
 
 const messageX = toPixels(-1, 3).x;
@@ -49,14 +51,18 @@ function onClick(e) {
 	if (global_game_over) {
 		return;
 	}
+    var x = e.pageX;
+    var y = e.pageY;
 
-    var x = e.clientX;
-    var y = e.clientY;
+    // allow y < ORIGIN_Y because that's like dropping a piece
+    if (x > MAX_BOARD_X || y > MAX_BOARD_Y || x < ORIGIN_X) {
+    	message("you missed the board");
+		return;
+    }
 
 	var col = Math.floor((x - ORIGIN_X) / SQUARE_SIDE);
 	if (col < 0 || col >= N_COLS) {
-		message("click on the board somewhere");
-		return;
+		throw "invalid column";
 	} 
 
 	for (var row = 0; row < N_ROWS; row++) {
@@ -125,6 +131,13 @@ function main_loop(row, col) {
  		var move = choose_move(global_player, global_board);
  		main_loop(move.row, move.col);
  	}
+}
+
+function restart() {
+	console.log("restarting");
+	reset_shared_state();
+	reset_bot_state();
+	message("new game");
 }
 
 
