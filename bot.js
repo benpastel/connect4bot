@@ -3,7 +3,7 @@ const global_threats_updated = new Uint8Array(N_ROWS * N_COLS);
 
 const EVAL_FUNCTION = minimax;
 const MONTE_CARLO_TRIALS = 20;
-const SEARCH_DEPTH = 1;
+const SEARCH_DEPTH = 3;
 
 // single entry point to this file
 function choose_move(player, board) {
