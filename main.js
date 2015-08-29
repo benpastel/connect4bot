@@ -8,6 +8,8 @@ const paper = Raphael(0, 0, 1000, 1000);
 const messageX = toPixels(-1, 3).x;
 const messageY = toPixels(-1, 3).y;
 
+const ANIMATION_MILLIS = 500;
+
 // initialize display
 for (var row = 0; row < N_ROWS+1; row++) {
 	var y = ORIGIN_Y + row * SQUARE_SIDE;
@@ -79,10 +81,15 @@ function onClick(e) {
 }
 
 function updateDisplay(row, col, player) {
-	var xy = toPixels(row, col);
-	var circle = paper.circle(xy.x, xy.y, SQUARE_SIDE / 2.0 - 1); 
+	console.log("updating display: " + [row, col, player]);
+
+	var start_xy = toPixels(N_ROWS, col);
+	var target_xy = toPixels(row, col);
+
+	var circle = paper.circle(start_xy.x, start_xy.y, SQUARE_SIDE / 2.0 - 1); 
 	var color = (player === YELLOW ? "#ff0" : "#f00");
 	circle.attr("fill", color);
+	circle.animate({cx: target_xy.x, cy: target_xy.y}, ANIMATION_MILLIS, "bounce");
 }
 
 function end(result_check) {
@@ -117,20 +124,24 @@ message("click on a column to drop a piece");
 function main_loop(row, col) {
 	message("");
 	global_board[row + col * N_ROWS] = global_player;
-
 	updateDisplay(row, col, global_player);
 
-	const result_check = check_result_with_squares(row, col, global_board);
-	if (result_check.result !== RESULT.CONTINUE) {
-		end(result_check);
-	}
+	// sleep to let the animation run
+	document.body.style.cursor = "progress";
+	setTimeout(function() {
+		const result_check = check_result_with_squares(row, col, global_board);
+			if (result_check.result !== RESULT.CONTINUE) {
+				end(result_check);
+			}
 
- 	global_player = other(global_player);
+		 	global_player = other(global_player);
 
- 	if (!global_game_over && is_bot(global_player)) {
- 		var move = choose_move(global_player, global_board);
- 		main_loop(move.row, move.col);
- 	}
+		 	if (!global_game_over && is_bot(global_player)) {
+		 		var move = choose_move(global_player, global_board);
+		 		main_loop(move.row, move.col);
+		 	}
+		document.body.style.cursor = "default";
+	}, ANIMATION_MILLIS + 100);
 }
 
 function restart() {
