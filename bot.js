@@ -1,7 +1,7 @@
 const global_threats = new Uint8Array(N_ROWS * N_COLS);
 const global_threats_updated = new Uint8Array(N_ROWS * N_COLS);
 
-const EVAL_FUNCTION = minimax;
+const EVAL_FUNCTION = mcts;
 const MONTE_CARLO_TRIALS = 20;
 const SEARCH_DEPTH = 3;
 
@@ -50,6 +50,7 @@ function unfilled_row(col, board) {
 	}
 	return null;
 }
+
 function possible_moves(board) {
 	var options = [];
 	for (var col=0; col<N_COLS; col++) {
