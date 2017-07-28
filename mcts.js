@@ -1,9 +1,5 @@
-
-// TODO: LEFT OFF HERE: select needs to be recursive
-// and it's throwing some undefined node error
-
 // trade-off between exploration and exploitation
-const C = Math.sqrt(2)
+const C = 1.2
 
 // number of moves to explore in each square
 // TODO: set a time limit instead
@@ -19,48 +15,47 @@ function score(result, player) {
     return player === to_winner(result) ? 1 : -1;
 }
 
-function Node(parent, state, result) {
-    this.parent = parent;
+function Node(parent_node, state, result, square) {
+    this.parent_node = parent_node;
     this.state = state;
     this.children = [];
     this.wins = 0;
     this.sims = 0;
     this.result = result;
+    this.square = square;
 
-    // whether this node min / maxes is the opposite of its parent
-    // TODO: look up javascript binding precedence
-    this.is_max = (!parent) ? true : (!parent.is_max) 
+    // if is_max, then this node is trying to maximize over its children 
+    this.is_max = !parent_node ? false : !parent_node.is_max
 
-    if (parent) {
-        parent.children.push(this)
+    if (parent_node) {
+        parent_node.children.push(this)
     }
 }
 
-// TODO: double check that node.is_max is the correct level here
+// TODO: scale these between -1 and 1 more gracefully
+// TODO: backprop terminal results differently
 function UCT(node, player) {
-    if (!node.parent) {
+    if (!node.parent_node) {
         throw "UCT undefined for the root";
     }
     if (node.result !== RESULT.CONTINUE) {
         // we know the exact result
-        return score(node.result)
+        return score(node.result);
     }
 
-    // optimistically estimate the result as score +/- confidence interval
-    const mean = node.wins / node.sims
-    const interval = Math.sqrt(Math.log(node.parent.sims) / node.sims)
-    if (node.is_max) {
-        return mean + C * interval
+    const mean = node.wins / node.sims;
+    const interval = Math.sqrt(Math.log(node.parent_node.sims) / node.sims);
+
+    if (node.parent_node.is_max) {
+        return Math.min(0.95, mean + C * interval);
     } else {
-        return mean - C * interval
+        return Math.max(-0.95, mean - C * interval);
     }
 }
 
-// select an unexplored child, or the child with the highest score
-// TODO: double check that the min/maxing levels are correct
-// TODO: this should be recursive anyway
+// select unexplored or best-scoring child
 function select(node, player) {
-    if (node.sims === 0) { 
+    if (node.sims === 0 || node.result !== RESULT.CONTINUE) { 
         return node;
     }
     for (child of node.children) {
@@ -77,12 +72,12 @@ function select(node, player) {
     for (child of node.children) {
         var score = UCT(child, player);
         if ((node.is_max && score > best_score) ||
-            (node.is_min && score < best_score)) {
+            (!node.is_max && score < best_score)) {
             best_score = score;
             best_child = child;
         }
     }
-    return best_child;
+    return select(best_child, player);
 }
 
 function expand(node) {
@@ -92,11 +87,14 @@ function expand(node) {
     }
 
     var options = possible_moves(node.state.board);
+    if (options.length === 0) {
+        throw "no legal moves in expand()";
+    }
 
     for (option of options) {
         var state = node.state.clone();
         var result = state.move(option);
-        var child = Node(node, state, result);
+        var child = new Node(node, state, result, option);
     }
 }
 
@@ -104,7 +102,7 @@ function expand(node) {
 function rollout(node, player) {
     const state = node.state.clone()
 
-    var result = state.move(square);
+    var result = node.result;
 
     while (result === RESULT.CONTINUE) {
         var move = choose_move_with_eval(reflex, state);
@@ -119,22 +117,35 @@ function backprop(leaf, score) {
     node.sims++;
     node.wins += score;
 
-    while (node.parent) {
-        node = node.parent;
+    while (node.parent_node != null) {
+        node = node.parent_node;
         node.sims++;
         node.wins += score;
     }
 }
 
-function mcts(square, player, state) {
-    root = Node(null, state, RESULT.CONTINUE);
+function mcts(square, player, orig_state) {
+    const state = orig_state.clone()
+    const result = state.move(square);
+    if (result !== RESULT.CONTINUE) {
+        return score(result, player);
+    }
+    const root = new Node(null, state, RESULT.CONTINUE, square);
 
     for (var m = 0; m < MOVES; m++) {
-        node = select(root);
-        expand(node);
-        score = rollout(node, player);
-        backprop(node, score);
-    }
-    return root.wins / root.sims;
+        var node = select(root);
 
+        expand(node);
+
+        var rollout_score = rollout(node, player);
+
+        backprop(node, rollout_score);
+    }
+    var val = root.wins / root.sims;
+    console.log(square + " -> " + val + " (" + root.sims + ")");
+    for (child of root.children) {
+        console.log("    " + child.square + " -> " + (child.wins / child.sims) + " (" + child.sims + ")" + child.result + " ~ " + UCT(child, player));
+    }
+
+    return val;
 }
