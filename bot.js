@@ -224,20 +224,3 @@ function to_winner(result) {
 		result === RESULT.RED_WINS ? RED : 0;
 }
 
-// const N_TRIALS = 10;
-// function time() {
-// 	console.log("timing " + N_TRIALS);
-// 	var sum = 0;
-// 	for (var t=0; t<N_TRIALS; t++) {
-// 		var start = new Date().getTime();
-// 		choose_move(YELLOW, global_board);
-// 		var stop = new Date().getTime();
-// 		console.log("elapsed: " + (stop - start));
-// 		sum += (stop - start);
-// 	}
-// 	console.log("average: " + sum / N_TRIALS);
-// }
-// time();
-
-
-

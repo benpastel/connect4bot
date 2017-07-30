@@ -2,8 +2,15 @@
 const C = 1.2
 
 // number of moves to explore in each square
-// TODO: set a time limit instead
-const MOVES = 100;
+// TODO: set by UI
+// TODO: set at top level
+const TIME_LIMIT_MS = 200;
+const BUFFER_TIME_MS = 5;
+
+function timeout(start) {
+    const now = new Date();
+    return now - start >= TIME_LIMIT_MS - BUFFER_TIME_MS;
+}
 
 function score(result, player) {
     if (result === RESULT.DRAW) {
@@ -125,6 +132,7 @@ function backprop(leaf, score) {
 }
 
 function mcts(square, player, orig_state) {
+    const start = new Date();
     const state = orig_state.clone()
     const result = state.move(square);
     if (result !== RESULT.CONTINUE) {
@@ -132,7 +140,7 @@ function mcts(square, player, orig_state) {
     }
     const root = new Node(null, state, RESULT.CONTINUE, square);
 
-    for (var m = 0; m < MOVES; m++) {
+    while (!timeout(start)) {
         var node = select(root);
 
         expand(node);
@@ -142,10 +150,6 @@ function mcts(square, player, orig_state) {
         backprop(node, rollout_score);
     }
     var val = root.wins / root.sims;
-    console.log(square + " -> " + val + " (" + root.sims + ")");
-    for (child of root.children) {
-        console.log("    " + child.square + " -> " + (child.wins / child.sims) + " (" + child.sims + ")" + child.result + " ~ " + UCT(child, player));
-    }
-
+    console.log(square + " -> " + val + "(" + root.sims + " rollouts)");
     return val;
 }
