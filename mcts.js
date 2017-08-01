@@ -1,15 +1,10 @@
 // trade-off between exploration and exploitation
 const C = 1.2
 
-// number of moves to explore in each square
-// TODO: set by UI
-// TODO: set at top level
-const TIME_LIMIT_MS = 200;
-const BUFFER_TIME_MS = 5;
-
+// TODO: run MCTS from top level so we don't need to divide by 7 here
 function timeout(start) {
     const now = new Date();
-    return now - start >= TIME_LIMIT_MS - BUFFER_TIME_MS;
+    return now - start >= (TIME_LIMIT_MS - BUFFER_TIME_MS) / 7;
 }
 
 function score(result, player) {

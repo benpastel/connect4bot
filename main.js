@@ -120,6 +120,7 @@ function end(result_check) {
 	}
 }
 
+// TODO: some kind of lock or atomic state so you can't drop multiple times in a row
 function main_loop(row, col) {
 	message("");
 	global_board[row + col * N_ROWS] = global_player;
@@ -143,7 +144,6 @@ function main_loop(row, col) {
 	}, ANIMATION_MILLIS + 100);
 }
 
-// TODO: wipe the pieces from the board
 function restart() {
 	console.log("restarting");
 	reset_shared_state();
@@ -151,6 +151,14 @@ function restart() {
 	paper.clear();
 	initDisplay();
 	message("new game");
+}
+
+// TODO: make this apply to alphabeta & montecarlo too
+var TIME_LIMIT_MS = 200;
+const BUFFER_TIME_MS = 5;
+function changeDifficulty(new_time_ms) {
+	TIME_LIMIT_MS = new_time_ms;
+	console.log("new time limit: " + TIME_LIMIT_MS);
 }
 
 initDisplay();
