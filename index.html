@@ -25,9 +25,32 @@
 			
 		<br/>
 		<input id="restartButton" type="button" value="restart" onclick="restart();"/>
+		&nbsp; &nbsp; 
+
+		<!-- Difficulty Slider -->
 		FAST 
 		<input id="difficultySlider" type="range"  min="12" max="2000" value="500" 
 			onchange="changeDifficulty(this.value);"/> 
 		SMART
+
+		<br/><br/>
+
+		Yellow Player
+		<form>
+			<input type="radio" name="yellowPlayer" value="human" checked
+				onchange="changeYellowPlayer(this.value);"/> human <br/>
+			<input type="radio" name="yellowPlayer" value="bot"
+				onchange="changeYellowPlayer(this.value);"/> bot <br/>
+		</form>
+
+		Red Player
+		<form >
+			<input type="radio" name="redPlayer" value="human"
+				onchange="changeRedPlayer(this.value);"/> human <br/>
+			<input type="radio" name="redPlayer" value="bot" checked
+				onchange="changeRedPlayer(this.value);"/> bot <br/>
+		</form>
+
+
 	</body>
 </html>

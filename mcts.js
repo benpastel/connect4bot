@@ -2,6 +2,7 @@
 const C = 1.2
 
 // TODO: run MCTS from top level so we don't need to divide by 7 here
+// TODO: can sometimes cause a nan somewhere with 10ms total time
 function timeout(start) {
     const now = new Date();
     return now - start >= (TIME_LIMIT_MS - BUFFER_TIME_MS) / 7;

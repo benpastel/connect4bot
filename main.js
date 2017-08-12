@@ -121,8 +121,12 @@ function end(result_check) {
 }
 
 // TODO: some kind of lock or atomic state so you can't drop multiple times in a row
+// TODO: human & computer moves better compartmentalized
 function main_loop(row, col) {
-	message("");
+	const yellowPlayer = document.querySelector('input[name="yellowPlayer"]:checked').value
+	const redPlayer = document.querySelector('input[name="redPlayer"]:checked').value
+
+	message("yellow: " + yellowPlayer + ", red: " + redPlayer);
 	global_board[row + col * N_ROWS] = global_player;
 	updateDisplay(row, col, global_player);
 
@@ -154,12 +158,13 @@ function restart() {
 }
 
 // TODO: make this apply to alphabeta & montecarlo too
-var TIME_LIMIT_MS = 200;
+var TIME_LIMIT_MS = 500;
 const BUFFER_TIME_MS = 5;
 function changeDifficulty(new_time_ms) {
 	TIME_LIMIT_MS = new_time_ms;
 	console.log("new time limit: " + TIME_LIMIT_MS);
 }
+
 
 initDisplay();
 document.addEventListener("click", onClick);
