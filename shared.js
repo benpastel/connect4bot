@@ -18,10 +18,17 @@ function reset_shared_state() {
 	}
 }
 
-// TODO: set via UI
 function is_bot(player) {
-	return global_player === YELLOW ? false : true;
+	const yellowPlayer = document.querySelector('input[name="yellowPlayer"]:checked').value
+	const redPlayer = document.querySelector('input[name="redPlayer"]:checked').value
+
+	if (player === YELLOW) {
+		return yellowPlayer === "bot";
+	} else {
+		return redPlayer === "bot";
+	}
 }
+
 function other(player) {
 	return player === YELLOW ? RED : YELLOW;
 }

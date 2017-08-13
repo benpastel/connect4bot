@@ -12,19 +12,19 @@
 			} 
 			#difficultySlider {
 			}
+			#message {
+				font-family: "serif";
+				font-style: "italic";
+				font-size: 50;
+			}
 		</style>
 	</head>
 	<body>
 		<div id="board"/>
+		<div id="message">your move</div>
 
-		<script src="raphael-min.js"></script>
-		<script src="shared.js"></script>
-		<script src="mcts.js"></script>
-		<script src="bot.js"></script>
-		<script src="main.js"></script>
-			
 		<br/>
-		<input id="restartButton" type="button" value="restart" onclick="restart();"/>
+		<input id="restartButton" type="button" value="restart" onclick="new_game();"/>
 		&nbsp; &nbsp; 
 
 		<!-- Difficulty Slider -->
@@ -37,20 +37,22 @@
 
 		Yellow Player
 		<form>
-			<input type="radio" name="yellowPlayer" value="human" checked
-				onchange="changeYellowPlayer(this.value);"/> human <br/>
-			<input type="radio" name="yellowPlayer" value="bot"
-				onchange="changeYellowPlayer(this.value);"/> bot <br/>
+			<input type="radio" name="yellowPlayer" value="human" checked/> human <br/>
+			<input type="radio" name="yellowPlayer" value="bot" 
+				onclick="get_next_move()"/> bot <br/>
 		</form>
 
 		Red Player
 		<form >
-			<input type="radio" name="redPlayer" value="human"
-				onchange="changeRedPlayer(this.value);"/> human <br/>
+			<input type="radio" name="redPlayer" value="human"/> human <br/>
 			<input type="radio" name="redPlayer" value="bot" checked
-				onchange="changeRedPlayer(this.value);"/> bot <br/>
+				onclick="get_next_move()"/> bot <br/>
 		</form>
 
-
+		<script src="raphael-min.js"></script>
+		<script src="shared.js"></script>
+		<script src="mcts.js"></script>
+		<script src="bot.js"></script>
+		<script src="main.js"></script>
 	</body>
 </html>
