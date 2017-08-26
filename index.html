@@ -1,53 +1,84 @@
 <html>
 	<head>
 		<style>
+
+			html * {
+				font-family: Cursive;
+			}
 			#restartButton {
-			    margin-left: 10px;
-			    margin-top: 10px;
 			    font-size: 24px;
-			    padding: 10px 10px;
-			    border-radius: 4px;
-			    background-color: white;
-    			color: black;
+			    width: 200px;
+			    border-radius: 10px;
+			    border: 1px solid black;
+			    background-color: lightgray;
 			} 
-			#difficultySlider {
+			#restartButton:active {
+				box-shadow: 0 5px #666;
+				transform: translateY(2px);
+				float:left;
 			}
 			#message {
-				font-family: "serif";
-				font-style: "italic";
-				font-size: 50;
+				font-size: 28;
+				float: right;
+			}
+			.difficultySlider {
+				width: 170px;
+			}
+			#playerOptions {
+			    border-radius: 25px;
+			    border: 1px solid black;
+			    padding: 20px; 
+			    width: 250px;
+			    background-color: lightgray;
+			}
+			#playerOptionsTitle {
+				text-align: center;
+				font-size: 25;
 			}
 		</style>
+
 	</head>
 	<body>
+		<div id="aboveBoard" style="width: 400px;">
+			<input id="restartButton" type="button" value="start a new game" onclick="new_game();"/>
+			<div id="message">your move!</div>
+		</div>
+
 		<div id="board"/>
-		<div id="message">your move</div>
 
-		<br/>
-		<input id="restartButton" type="button" value="restart" onclick="new_game();"/>
-		&nbsp; &nbsp; 
+		<div id="playerOptionsContainer" style="width:600px;">
+			<div id="playerOptions" style="float:left;">
+				<div id="playerOptionsTitle" style="color:9b870c;">
+					yellow player
+				</div>
+				<form>
+					<input type="radio" name="yellowPlayer" value="human"/> human <br/>
+					<input type="radio" name="yellowPlayer" value="bot" checked
+						onclick="get_next_move()"/> bot <br/>
+				</form>
 
-		<!-- Difficulty Slider -->
-		FAST 
-		<input id="difficultySlider" type="range"  min="12" max="2000" value="500" 
-			onchange="changeDifficulty(this.value);"/> 
-		SMART
+				easy 
+				<input id="yellowDifficulty" class="difficultySlider"
+					type="range"  min="12" max="2000" value="500"/> 
+				hard
+			</div>
 
-		<br/><br/>
+			<div id="playerOptions" style="float:right;">	
+				<div id="playerOptionsTitle" style="color:red;">
+					red player
+				</div>
 
-		Yellow Player
-		<form>
-			<input type="radio" name="yellowPlayer" value="human" checked/> human <br/>
-			<input type="radio" name="yellowPlayer" value="bot" 
-				onclick="get_next_move()"/> bot <br/>
-		</form>
-
-		Red Player
-		<form >
-			<input type="radio" name="redPlayer" value="human"/> human <br/>
-			<input type="radio" name="redPlayer" value="bot" checked
-				onclick="get_next_move()"/> bot <br/>
-		</form>
+				<form >
+					<input type="radio" name="redPlayer" value="human" checked/> human <br/>
+					<input type="radio" name="redPlayer" value="bot"
+						onclick="get_next_move()"/> bot <br/>
+				</form>
+				easy 
+				<input id="redDifficulty" class="difficultySlider"
+					type="range" min="12" max="2000" value="500"/> 
+				hard
+			</div>
+		</div>
 
 		<script src="raphael-min.js"></script>
 		<script src="shared.js"></script>

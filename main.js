@@ -3,7 +3,7 @@ const ORIGIN_X = 10;
 const ORIGIN_Y = 10;
 const MAX_BOARD_X = ORIGIN_X + SQUARE_SIDE * N_COLS;
 const MAX_BOARD_Y = ORIGIN_Y + SQUARE_SIDE * N_ROWS;
-const paper = Raphael("board", 580, 560); 
+const paper = Raphael("board", 580, 500); 
 console.log("Y: " + MAX_BOARD_Y)
 console.log("X: " + MAX_BOARD_X)
 // TODO: relative units to rescale gracefully on smaller browser window
@@ -113,13 +113,12 @@ function get_next_move() {
 		WAITING_FOR_INPUT = false;
 		message("thinking...");
 		// run in callback to let the UI update
-		// TODO: this doesn't work yet
 		setTimeout(function() {
 			var move = choose_move(global_player, global_board);
 			make_move(move.row, move.col);
 		}, 50);
 	} else {
-		message("your move");
+		message("your move!");
 		WAITING_FOR_INPUT = true;
 	}
 }
@@ -152,12 +151,9 @@ function new_game() {
 	get_next_move();
 }
 
-// TODO: make this apply to alphabeta & montecarlo too
-var TIME_LIMIT_MS = 500;
-const BUFFER_TIME_MS = 5;
-function changeDifficulty(new_time_ms) {
-	TIME_LIMIT_MS = new_time_ms;
-	console.log("new time limit: " + TIME_LIMIT_MS);
+function read_time_limit_ms(player) {
+	const name = (player === YELLOW ? "yellowDifficulty" : "redDifficulty");
+	return document.getElementById(name).value;
 }
 
 document.addEventListener("click", onClick);
