@@ -1,45 +1,4 @@
-const SQUARE_SIDE = 80;
-const ORIGIN_X = 10;
-const ORIGIN_Y = 10;
-const MAX_BOARD_X = ORIGIN_X + SQUARE_SIDE * N_COLS;
-const MAX_BOARD_Y = ORIGIN_Y + SQUARE_SIDE * N_ROWS;
-const paper = Raphael("board", 580, 500); 
-console.log("Y: " + MAX_BOARD_Y)
-console.log("X: " + MAX_BOARD_X)
-// TODO: relative units to rescale gracefully on smaller browser window
-
-const messageX = toPixels(-1, 3).x;
-const messageY = toPixels(-1, 3).y;
-const ANIMATION_MILLIS = 500;
-
 let WAITING_FOR_INPUT = false;
-
-function initDisplay() {
-	for (let row = 0; row < N_ROWS+1; row++) {
-		let y = ORIGIN_Y + row * SQUARE_SIDE;
-		paper.path(
-			"M" + ORIGIN_X + "," + y +
-			"L" + (ORIGIN_X + SQUARE_SIDE * N_COLS) + "," + y);
-	}
-	for (let col = 0; col < N_COLS+1; col++) {
-		let x = ORIGIN_X + col * SQUARE_SIDE;
-		paper.path(
-			"M" + x + "," + ORIGIN_Y + 
-			"L" + x + "," + (ORIGIN_Y + SQUARE_SIDE * N_ROWS));
-	}
-}
-
-// pixels of the center of the square
-function toPixels(row, col) {
-	return {
-		x: ORIGIN_X + (col + 0.5) * SQUARE_SIDE,
-		y: ORIGIN_Y + (N_ROWS - row - 1 + 0.5) * SQUARE_SIDE
-	}
-}
-
-function message(string) {
-	document.getElementById("message").innerHTML = string;
-}
 
 function onClick(e) {
 	if (!WAITING_FOR_INPUT) return;
@@ -71,19 +30,6 @@ function onClick(e) {
 		return;
 	}
 	make_move(row, col);
-}
-
-function updateDisplay(row, col, player, next_function) {
-	console.log("updating display: " + [row, col, player]);
-
-	let start_xy = toPixels(N_ROWS, col);
-	let target_xy = toPixels(row, col);
-
-	let circle = paper.circle(start_xy.x, start_xy.y, SQUARE_SIDE / 2.0 - 1); 
-	let color = (player === YELLOW ? "#ff0" : "#f00");
-	circle.attr("fill", color);
-	circle.animate({cx: target_xy.x, cy: target_xy.y}, ANIMATION_MILLIS, 
-		"bounce", next_function);
 }
 
 function end(result_check) {
@@ -132,7 +78,9 @@ function make_move(row, col) {
 	// make sure we aren't interrupted by more human input
 	WAITING_FOR_INPUT = false;
 
-	updateDisplay(row, col, global_player, function () {
+	const color = (global_player === YELLOW ? "#ff0" : "#f00");
+
+	updateDisplay(row, col, color, function () {
 		const result_check = check_result_with_squares(row, col, global_board);
 		if (result_check.result !== RESULT.CONTINUE) {
 			end(result_check);
