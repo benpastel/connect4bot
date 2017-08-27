@@ -59,7 +59,8 @@ function onClick(e) {
 		throw "invalid column";
 	} 
 
-	for (let row = 0; row < N_ROWS; row++) {
+	let row;
+	for (row = 0; row < N_ROWS; row++) {
 		if (!global_board[row + col * N_ROWS]) {
 			break;
 		}
