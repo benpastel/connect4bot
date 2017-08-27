@@ -7,13 +7,13 @@ const global_board = new Uint8Array(N_ROWS * N_COLS);
 const YELLOW = 1;
 const RED = 10; 
 
-var global_player = YELLOW;
-var global_game_over = false;
+let global_player = YELLOW;
+let global_game_over = false;
 
 function reset_shared_state() {
 	global_player = YELLOW;
 	global_game_over = false;
-	for (var i = 0; i<global_board.length; i++) {
+	for (let i = 0; i<global_board.length; i++) {
 		global_board[i] = 0;
 	}
 }
@@ -51,18 +51,18 @@ function init_slices() {
 	const desc_lookup = [];
 
 	// rows
-	for (var row = 0; row < N_ROWS; row++) {
-		var slice = [];
-		for (var col = 0; col < N_COLS; col++) {
+	for (let row = 0; row < N_ROWS; row++) {
+		let slice = [];
+		for (let col = 0; col < N_COLS; col++) {
 			slice.push(new Point(row, col));
 			row_lookup[row + col * N_ROWS] = slice;
 		}
 	}
 
 	// columns
-	for (var col = 0; col < N_COLS; col++) {
-		var slice = [];
-		for (var row = 0; row < N_ROWS; row++) {
+	for (let col = 0; col < N_COLS; col++) {
+		let slice = [];
+		for (let row = 0; row < N_ROWS; row++) {
 			slice.push(new Point(row, col));
 			col_lookup[row + col * N_ROWS] = slice; 
 		}
@@ -70,10 +70,10 @@ function init_slices() {
 	
 	// ascending diagonals
 	// get all the ones that hit the left wall
-	for (var start_row = 0; start_row < N_ROWS; start_row++) {
-		var slice = [];
-		var row = start_row;
-		var col = 0;
+	for (let start_row = 0; start_row < N_ROWS; start_row++) {
+		let slice = [];
+		let row = start_row;
+		let col = 0;
 		while (col < N_COLS && row < N_ROWS) {
 			slice.push(new Point(row, col));
 			asc_lookup[row + col * N_ROWS] = slice;
@@ -82,10 +82,10 @@ function init_slices() {
 		}
 	}
 	// get all the ones that hit the bottom. don't double count the one overlap
-	for (var start_col = 1; start_col < N_COLS; start_col++) {
-		var slice = [];
-		var row = 0;
-		var col = start_col;
+	for (let start_col = 1; start_col < N_COLS; start_col++) {
+		let slice = [];
+		let row = 0;
+		let col = start_col;
 		while (col < N_COLS && row < N_ROWS) {
 			slice.push(new Point(row, col));
 			asc_lookup[row + col * N_ROWS] = slice;
@@ -96,10 +96,10 @@ function init_slices() {
 
 	// descending diagonals
 	// get all the ones that hit the left wall
-	for (var start_row = 0; start_row < N_ROWS; start_row++) {
-		var slice = [];
-		var row = start_row;
-		var col = 0;
+	for (let start_row = 0; start_row < N_ROWS; start_row++) {
+		let slice = [];
+		let row = start_row;
+		let col = 0;
 		while (row >= 0 && col < N_COLS) {
 			slice.push(new Point(row, col));
 			desc_lookup[row + col * N_ROWS] = slice;
@@ -108,10 +108,10 @@ function init_slices() {
 		}
 	}
 	// get all the ones that hit the top. don't double count the one overlap.
-	for (var start_col = 1; start_col < N_COLS; start_col++) {
-		var slice = [];
-		var row = N_ROWS-1;
-		var col = start_col;
+	for (let start_col = 1; start_col < N_COLS; start_col++) {
+		let slice = [];
+		let row = N_ROWS-1;
+		let col = start_col;
 		while (row >= 0 && col < N_COLS) {
 			slice.push(new Point(row, col));
 			desc_lookup[row + col * N_ROWS] = slice;
@@ -121,7 +121,7 @@ function init_slices() {
 	}
 
 	// package up the results for each square
-	for (var idx = 0; idx < N_ROWS * N_COLS; idx++) {
+	for (let idx = 0; idx < N_ROWS * N_COLS; idx++) {
 		slice_lookup[idx] = [
 			row_lookup[idx],
 			col_lookup[idx],
@@ -133,7 +133,7 @@ function init_slices() {
 init_slices();
 
 function isFilled(board) {
-	for (var idx = N_ROWS-1; idx < board.length; idx += N_ROWS) {
+	for (let idx = N_ROWS-1; idx < board.length; idx += N_ROWS) {
 		if (!board[idx]) {
 			return false;
 		}
@@ -153,11 +153,11 @@ function check_result(row, col, board) {
 function check_result_with_squares(row, col, board) {
 	const slices = slice_lookup[row + col*N_ROWS];
 
-	for (var s=0; s<slices.length; s++) {
-		var slice = slices[s];
+	for (let s=0; s<slices.length; s++) {
+		let slice = slices[s];
 
-		for (var i = 0; i < slice.length - 3; i++) {
-			var sum = 
+		for (let i = 0; i < slice.length - 3; i++) {
+			let sum = 
 				board[slice[i].row + slice[i].col * N_ROWS] + 
 				board[slice[i+1].row + slice[i+1].col * N_ROWS] + 
 				board[slice[i+2].row + slice[i+2].col * N_ROWS] + 
@@ -184,10 +184,10 @@ function check_result_with_squares(row, col, board) {
 }
 
 function board_to_string(board) {
-	var string = "\n";
-	for (var row = N_ROWS-1; row >= 0; row--) {
-		for (var col = 0; col < N_COLS; col++) {
-			var val = board[row + col * N_ROWS];
+	let string = "\n";
+	for (let row = N_ROWS-1; row >= 0; row--) {
+		for (let col = 0; col < N_COLS; col++) {
+			let val = board[row + col * N_ROWS];
 			if (val === YELLOW) {
 				string += "Y\t"; 
 			} else if (val === RED) {

@@ -13,7 +13,7 @@ function choose_move(player, board) {
 }
 
 function reset_bot_state() {
-	for (var i=0; i<N_ROWS * N_COLS; i++) {
+	for (let i=0; i<N_ROWS * N_COLS; i++) {
 		global_threats[i] = 0;
 		global_threats_updated[i] = false;
 	}
@@ -23,18 +23,18 @@ function choose_move_with_eval(eval_function, state) {
 	// TODO: do I still need to update threats here?
 	update_threats(state.board, state.threats, state.updated);
 
-	var options = possible_moves(state.board);
+	let options = possible_moves(state.board);
 
-	var vals = [];
-	for (var i = 0; i<options.length; i++) {
+	let vals = [];
+	for (let i = 0; i<options.length; i++) {
 		vals[i] = eval_function(options[i], state.player, state);
 	}
 
-	var max = vals[0];
-	for (var i=1; i < vals.length; i++) {
+	let max = vals[0];
+	for (let i=1; i < vals.length; i++) {
 		max = Math.max(max, vals[i]);
 	}
-	for (var i=0; i < vals.length; i++) {
+	for (let i=0; i < vals.length; i++) {
 		if (vals[i] === max) {
 			return options[i];
 		}
@@ -43,7 +43,7 @@ function choose_move_with_eval(eval_function, state) {
 }
 
 function unfilled_row(col, board) {
-	for (var row = 0; row < N_ROWS; row++) {
+	for (let row = 0; row < N_ROWS; row++) {
 		if (!board[row + col * N_ROWS]) {
 			return row;
 		}
@@ -52,9 +52,9 @@ function unfilled_row(col, board) {
 }
 
 function possible_moves(board) {
-	var options = [];
-	for (var col=0; col<N_COLS; col++) {
-		var row = unfilled_row(col, board);
+	let options = [];
+	for (let col=0; col<N_COLS; col++) {
+		let row = unfilled_row(col, board);
 		if (row !== null) {
 			options.push(new Point(row, col));
 		}
@@ -72,23 +72,23 @@ function update_threats(board, threats, updated) {
 	// heavily inlined after profiling
 
 	// scan for new moves
-	for (var i = 0; i < board.length; i++) {
+	for (let i = 0; i < board.length; i++) {
 		if (board[i] && !updated[i]) {
 			// found a new move
 			updated[i] = true;
 
-			var slices = slice_lookup[i];
-			for (var s = 0; s < slices.length; s++) {
-				var slice = slices[s];
-				for (var i=0; i<slice.length-3; i++) {
-					var sum = 
+			let slices = slice_lookup[i];
+			for (let s = 0; s < slices.length; s++) {
+				let slice = slices[s];
+				for (let i=0; i<slice.length-3; i++) {
+					let sum = 
 						board[slice[i].row + slice[i].col * N_ROWS] + 
 						board[slice[i+1].row + slice[i+1].col * N_ROWS] + 
 						board[slice[i+2].row + slice[i+2].col * N_ROWS] + 
 						board[slice[i+3].row + slice[i+3].col * N_ROWS];
 
 					if (sum === 3 || sum === 30) {
-						var open_square =
+						let open_square =
 							!board[slice[i].row + slice[i].col * N_ROWS] ? slice[i] :
 							!board[slice[i+1].row + slice[i+1].col * N_ROWS] ? slice[i+1] :
 							!board[slice[i+2].row + slice[i+2].col * N_ROWS] ? slice[i+2] :
@@ -104,7 +104,7 @@ function update_threats(board, threats, updated) {
 
 // fast, somewhat random number in [0, 10)
 // en.wikipedia.org/wiki/Lehmer_random_number_generator
-var FAST_RAND = Math.floor(Math.random() * 65537);
+let FAST_RAND = Math.floor(Math.random() * 65537);
 function fastRand() {
 	FAST_RAND = (75 * FAST_RAND) % 65537;
 	return FAST_RAND % 10;
@@ -121,7 +121,7 @@ function reflex(square, player, state) {
 	const threat_above = (square.row+1 < N_ROWS) ? 
 		state.threats[square.row + 1 + square.col * N_ROWS] : 0;
 
-	var val = fastRand();
+	let val = fastRand();
 	if (threat_here === player) {val += 10000; }
 	if (threat_here === other(player)) {val += 1000; }
 	if (threat_above === other(player)) {val -= 100; }
@@ -157,7 +157,7 @@ State.prototype.move = function(square) {
 
 function clone_array(a) {
 	const b = new Uint8Array(a.length);
-	for (var i=0; i<a.length; i++) {
+	for (let i=0; i<a.length; i++) {
 		b[i] = a[i];
 	}
 	return b;
@@ -166,20 +166,20 @@ function clone_array(a) {
 // play reflex agent against itself a bunch of times
 function monte_carlo(square, orig_player, old_state) {
 
-	var score = 0;
-	for (var trial = 0; trial < MONTE_CARLO_TRIALS; trial++) {
-		var state = old_state.clone();
-		var result = state.move(square);
+	let score = 0;
+	for (let trial = 0; trial < MONTE_CARLO_TRIALS; trial++) {
+		let state = old_state.clone();
+		let result = state.move(square);
 
-		var first_turn = true;
+		let first_turn = true;
 		while (result === RESULT.CONTINUE) {
 			first_turn = false;
 
-			var move = choose_move_with_eval(reflex, state);
+			let move = choose_move_with_eval(reflex, state);
 
 			result = state.move(move);
 		}
-		var winner = to_winner(result);
+		let winner = to_winner(result);
 		if (winner === orig_player) {
 			score += first_turn ? 10 : 1;
 		} else if (winner === other(orig_player)) {
@@ -201,10 +201,10 @@ function minimax_rec(square, depth, orig_player, old_state) {
 	}
 
 	const options = possible_moves(state.board);
-	var max = -Infinity;
-	var min = +Infinity;
-	for (var i = 0; i < options.length; i++) {
-		var val = depth === SEARCH_DEPTH ?
+	let max = -Infinity;
+	let min = +Infinity;
+	for (let i = 0; i < options.length; i++) {
+		let val = depth === SEARCH_DEPTH ?
 			monte_carlo(options[i], orig_player, state) :
 			minimax_rec(options[i], depth+1, orig_player, state);
 		max = Math.max(max, val);
@@ -214,7 +214,7 @@ function minimax_rec(square, depth, orig_player, old_state) {
 }
 
 function minimax(square, player, state) {
-	var val = minimax_rec(square, 1, player, state);
+	let val = minimax_rec(square, 1, player, state);
 	console.log(square + " -> " + val);
 	return val;
 }

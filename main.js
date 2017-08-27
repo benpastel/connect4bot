@@ -12,17 +12,17 @@ const messageX = toPixels(-1, 3).x;
 const messageY = toPixels(-1, 3).y;
 const ANIMATION_MILLIS = 500;
 
-var WAITING_FOR_INPUT = false;
+let WAITING_FOR_INPUT = false;
 
 function initDisplay() {
-	for (var row = 0; row < N_ROWS+1; row++) {
-		var y = ORIGIN_Y + row * SQUARE_SIDE;
+	for (let row = 0; row < N_ROWS+1; row++) {
+		let y = ORIGIN_Y + row * SQUARE_SIDE;
 		paper.path(
 			"M" + ORIGIN_X + "," + y +
 			"L" + (ORIGIN_X + SQUARE_SIDE * N_COLS) + "," + y);
 	}
-	for (var col = 0; col < N_COLS+1; col++) {
-		var x = ORIGIN_X + col * SQUARE_SIDE;
+	for (let col = 0; col < N_COLS+1; col++) {
+		let x = ORIGIN_X + col * SQUARE_SIDE;
 		paper.path(
 			"M" + x + "," + ORIGIN_Y + 
 			"L" + x + "," + (ORIGIN_Y + SQUARE_SIDE * N_ROWS));
@@ -46,20 +46,20 @@ function onClick(e) {
 
 	if (global_game_over) throw "Error: game already over";
 
-    var x = e.pageX;
-    var y = e.pageY;
+    let x = e.pageX;
+    let y = e.pageY;
 
     if (x > MAX_BOARD_X || y > MAX_BOARD_Y || x < ORIGIN_X) {
     	// off the board; ignore
 		return;
     }
 
-	var col = Math.floor((x - ORIGIN_X) / SQUARE_SIDE);
+	let col = Math.floor((x - ORIGIN_X) / SQUARE_SIDE);
 	if (col < 0 || col >= N_COLS) {
 		throw "invalid column";
 	} 
 
-	for (var row = 0; row < N_ROWS; row++) {
+	for (let row = 0; row < N_ROWS; row++) {
 		if (!global_board[row + col * N_ROWS]) {
 			break;
 		}
@@ -75,11 +75,11 @@ function onClick(e) {
 function updateDisplay(row, col, player, next_function) {
 	console.log("updating display: " + [row, col, player]);
 
-	var start_xy = toPixels(N_ROWS, col);
-	var target_xy = toPixels(row, col);
+	let start_xy = toPixels(N_ROWS, col);
+	let target_xy = toPixels(row, col);
 
-	var circle = paper.circle(start_xy.x, start_xy.y, SQUARE_SIDE / 2.0 - 1); 
-	var color = (player === YELLOW ? "#ff0" : "#f00");
+	let circle = paper.circle(start_xy.x, start_xy.y, SQUARE_SIDE / 2.0 - 1); 
+	let color = (player === YELLOW ? "#ff0" : "#f00");
 	circle.attr("fill", color);
 	circle.animate({cx: target_xy.x, cy: target_xy.y}, ANIMATION_MILLIS, 
 		"bounce", next_function);
@@ -93,9 +93,9 @@ function end(result_check) {
 		return;
 	}
 		
-	var start = toPixels(result_check.squares[0].row, result_check.squares[0].col);
-	var end = toPixels(result_check.squares[3].row, result_check.squares[3].col);
-	var path = paper.path(
+	let start = toPixels(result_check.squares[0].row, result_check.squares[0].col);
+	let end = toPixels(result_check.squares[3].row, result_check.squares[3].col);
+	let path = paper.path(
 		"M" + start.x + "," + start.y + 
 		"L" + end.x + "," + end.y);
 	path.attr("stroke-dasharray","-");
@@ -114,7 +114,7 @@ function get_next_move() {
 		message("thinking...");
 		// run in callback to let the UI update
 		setTimeout(function() {
-			var move = choose_move(global_player, global_board);
+			let move = choose_move(global_player, global_board);
 			make_move(move.row, move.col);
 		}, 50);
 	} else {

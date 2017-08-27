@@ -71,11 +71,11 @@ function select(node, player) {
     if (node.children.length === 0) {
         throw "node has no children";
     }
-    var best_child = node.children[0];
-    var best_score = UCT(best_child, player);
+    let best_child = node.children[0];
+    let best_score = UCT(best_child, player);
 
     for (child of node.children) {
-        var score = UCT(child, player);
+        let score = UCT(child, player);
         if ((node.is_max && score > best_score) ||
             (!node.is_max && score < best_score)) {
             best_score = score;
@@ -91,15 +91,15 @@ function expand(node) {
         return;
     }
 
-    var options = possible_moves(node.state.board);
+    let options = possible_moves(node.state.board);
     if (options.length === 0) {
         throw "no legal moves in expand()";
     }
 
     for (option of options) {
-        var state = node.state.clone();
-        var result = state.move(option);
-        var child = new Node(node, state, result, option);
+        let state = node.state.clone();
+        let result = state.move(option);
+        let child = new Node(node, state, result, option);
     }
 }
 
@@ -107,10 +107,10 @@ function expand(node) {
 function rollout(node, player) {
     const state = node.state.clone()
 
-    var result = node.result;
+    let result = node.result;
 
     while (result === RESULT.CONTINUE) {
-        var move = choose_move_with_eval(reflex, state);
+        let move = choose_move_with_eval(reflex, state);
         result = state.move(move);
     }
     return score(result, player);
@@ -118,7 +118,7 @@ function rollout(node, player) {
 
 // record the result from the leaf up to the root
 function backprop(leaf, score) {
-    var node = leaf;
+    let node = leaf;
     node.sims++;
     node.wins += score;
 
@@ -130,8 +130,6 @@ function backprop(leaf, score) {
 }
 
 function mcts(square, player, orig_state) {
-    console.log("TIME LIMIT: ", read_time_limit_ms(player), "ms");
-
     const start = new Date();
     const state = orig_state.clone()
     const result = state.move(square);
@@ -141,15 +139,15 @@ function mcts(square, player, orig_state) {
     const root = new Node(null, state, RESULT.CONTINUE, square);
 
     while (!timeout(start, player)) {
-        var node = select(root);
+        let node = select(root);
 
         expand(node);
 
-        var rollout_score = rollout(node, player);
+        let rollout_score = rollout(node, player);
 
         backprop(node, rollout_score);
     }
-    var val = root.wins / root.sims;
+    let val = root.wins / root.sims;
     console.log(square + " -> " + val + "(" + root.sims + " rollouts)");
     return val;
 }
