@@ -14,7 +14,7 @@ function toPixels(row, col) {
     }
 }
 
-function initDisplay() {
+function drawEmptyBoard() {
     for (let row = 0; row < N_ROWS+1; row++) {
         let y = ORIGIN_Y + row * SQUARE_SIDE;
         paper.path(
@@ -29,7 +29,7 @@ function initDisplay() {
     }
 }
 
-function updateDisplay(row, col, color, next_function) {
+function drawPieceDrop(row, col, color, next_function) {
     let start_xy = toPixels(N_ROWS, col);
     let target_xy = toPixels(row, col);
 
@@ -38,6 +38,16 @@ function updateDisplay(row, col, color, next_function) {
     circle.attr("fill", color);
     circle.animate({cx: target_xy.x, cy: target_xy.y}, ANIMATION_MILLIS, 
         "bounce", next_function);
+}
+
+function drawWinLine(start_row, start_col, end_row, end_col) {
+    let start = toPixels(start_row, start_col);
+    let end = toPixels(end_row, end_col);
+    let path = paper.path(
+        "M" + start.x + "," + start.y + 
+        "L" + end.x + "," + end.y);
+    path.attr("stroke-dasharray","-");
+    path.attr("stroke-width", 4.0);
 }
 
 

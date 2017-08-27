@@ -39,14 +39,10 @@ function end(result_check) {
 		message("DRAW!");
 		return;
 	}
-		
-	let start = toPixels(result_check.squares[0].row, result_check.squares[0].col);
-	let end = toPixels(result_check.squares[3].row, result_check.squares[3].col);
-	let path = paper.path(
-		"M" + start.x + "," + start.y + 
-		"L" + end.x + "," + end.y);
-	path.attr("stroke-dasharray","-");
-	path.attr("stroke-width", 4.0);
+
+	drawWinLine(
+		result_check.squares[0].row, result_check.squares[0].col,
+		result_check.squares[3].row, result_check.squares[3].col);
 
 	if (result_check.result === RESULT.YELLOW_WINS) {
 		message("YELLOW WINS!");
@@ -80,7 +76,7 @@ function make_move(row, col) {
 
 	const color = (global_player === YELLOW ? "#ff0" : "#f00");
 
-	updateDisplay(row, col, color, function () {
+	drawPieceDrop(row, col, color, function () {
 		const result_check = check_result_with_squares(row, col, global_board);
 		if (result_check.result !== RESULT.CONTINUE) {
 			end(result_check);
@@ -96,7 +92,7 @@ function new_game() {
 	reset_shared_state();
 	reset_bot_state();
 	paper.clear();
-	initDisplay();
+	drawEmptyBoard();
 	get_next_move();
 }
 
