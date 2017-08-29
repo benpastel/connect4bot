@@ -31,8 +31,8 @@ function onClick(e) {
 	if (col < 0 || col >= N_COLS) {
 		throw "invalid column";
 	} 
-	const row = firstOpenRow(col);
-	if (row === N_ROWS) {
+	const row = first_open_row(col, global_board);
+	if (row === null) {
 		// column is full; ignore
 		return;
 	}
@@ -94,7 +94,6 @@ function new_game() {
 	global_player = YELLOW;
 	console.log("new game");
 	reset_board();
-	reset_bot_state();
 	paper.clear();
 	drawEmptyBoard();
 	get_next_move();

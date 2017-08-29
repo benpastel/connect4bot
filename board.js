@@ -112,7 +112,7 @@ function init_slices() {
 }
 init_slices();
 
-function isFilled(board) {
+function is_filled(board) {
 	for (let idx = N_ROWS-1; idx < board.length; idx += N_ROWS) {
 		if (!board[idx]) {
 			return false;
@@ -120,13 +120,13 @@ function isFilled(board) {
 	}
 	return true;
 }
-function firstOpenRow(col) {
+function first_open_row(col, board) {
 	for (let row = 0; row < N_ROWS; row++) {
-		if (!global_board[row + col * N_ROWS]) {
+		if (!board[row + col * N_ROWS]) {
 			return row;
 		}
 	}
-	return N_ROWS;
+	return null; // column is filled
 }
 
 const RESULT = {
@@ -135,6 +135,8 @@ const RESULT = {
 	RED_WINS : 2,
 	DRAW : 3
 };
+
+// TODO collapse to one function
 function check_result(row, col, board) {
 	return check_result_with_squares(row, col, board).result;
 }
@@ -167,7 +169,7 @@ function check_result_with_squares(row, col, board) {
 		}
 	}
 	return {
-		result: isFilled(board) ? RESULT.DRAW : RESULT.CONTINUE,
+		result: is_filled(board) ? RESULT.DRAW : RESULT.CONTINUE,
 		squares: null
 	};
 }
