@@ -1,39 +1,47 @@
-let WAITING_FOR_INPUT = false;
+const STATES = {
+	WAITING_FOR_INPUT : 0,
+	BUSY : 1,
+	GAME_OVER : 2
+};
+let global_state = STATES.BUSY;
+let global_player = YELLOW;
+
+function is_bot(player) {
+    const playerName = (player === YELLOW ? "yellowPlayer" : "redPlayer");
+    const query = 'input[name=' + playerName + ']:checked';
+    return "bot" === document.querySelector(query).value;
+}
+
+function other(player) {
+    return player === YELLOW ? RED : YELLOW;
+}
 
 function onClick(e) {
-	if (!WAITING_FOR_INPUT) return;
+	if (global_state !== STATES.WAITING_FOR_INPUT) return;
 
-	if (global_game_over) throw "Error: game already over";
-
-    let x = e.pageX;
-    let y = e.pageY;
+    const x = e.pageX;
+    const y = e.pageY;
 
     if (x > MAX_BOARD_X || y > MAX_BOARD_Y || x < ORIGIN_X) {
     	// off the board; ignore
 		return;
     }
 
-	let col = Math.floor((x - ORIGIN_X) / SQUARE_SIDE);
+	const col = Math.floor((x - ORIGIN_X) / SQUARE_SIDE);
 	if (col < 0 || col >= N_COLS) {
 		throw "invalid column";
 	} 
-
-	let row;
-	for (row = 0; row < N_ROWS; row++) {
-		if (!global_board[row + col * N_ROWS]) {
-			break;
-		}
-	}
-
+	const row = firstOpenRow(col);
 	if (row === N_ROWS) {
-		message("that column is filled");
+		// column is full; ignore
 		return;
 	}
+	global_state = STATES.BUSY;
 	make_move(row, col);
 }
 
 function end(result_check) {
-	global_game_over = true;
+	global_state = STATES.GAME_OVER;
 		
 	if (result_check.result === RESULT.DRAW) {
 		message("DRAW!");
@@ -53,31 +61,25 @@ function end(result_check) {
 
 function get_next_move() {
 	if (is_bot(global_player)) {
-		WAITING_FOR_INPUT = false;
+		global_state = STATES.BUSY;
 		message("thinking...");
-		// run in callback to let the UI update
+		// pause to let the message update
 		setTimeout(function() {
-			let move = choose_move(global_player, global_board);
+			const move = choose_move(global_player, global_board);
 			make_move(move.row, move.col);
 		}, 50);
 	} else {
 		message("your move!");
-		WAITING_FOR_INPUT = true;
+		global_state = STATES.WAITING_FOR_INPUT;
 	}
 }
 
 function make_move(row, col) {
-	message("<br\>");
 	global_board[row + col * N_ROWS] = global_player;
 
-	// updateDisplay waits for the animation to finish and then runs a callback
-	// make sure we aren't interrupted by more human input
-	WAITING_FOR_INPUT = false;
-
+	const result_check = check_result_with_squares(row, col, global_board);
 	const color = (global_player === YELLOW ? "#ff0" : "#f00");
-
 	drawPieceDrop(row, col, color, function () {
-		const result_check = check_result_with_squares(row, col, global_board);
 		if (result_check.result !== RESULT.CONTINUE) {
 			end(result_check);
 		} else {
@@ -88,8 +90,10 @@ function make_move(row, col) {
 }
 
 function new_game() {
+	global_state = STATES.BUSY;
+	global_player = YELLOW;
 	console.log("new game");
-	reset_shared_state();
+	reset_board();
 	reset_bot_state();
 	paper.clear();
 	drawEmptyBoard();
@@ -100,7 +104,6 @@ function read_time_limit_ms(player) {
 	const name = (player === YELLOW ? "yellowDifficulty" : "redDifficulty");
 	return document.getElementById(name).value;
 }
-
 document.addEventListener("click", onClick);
 new_game();
 
