@@ -2,7 +2,6 @@
 const C = 1.2
 
 // TODO: run MCTS from top level so we don't need to divide by 7 here
-// TODO: can sometimes cause a nan somewhere with 10ms total time
 function timeout(start, player) {
     const buffer = 5;
     const now = new Date();

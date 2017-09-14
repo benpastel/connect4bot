@@ -1,10 +1,11 @@
 const STATES = {
 	WAITING_FOR_INPUT : 0,
 	BUSY : 1,
-	GAME_OVER : 2
+	// GAME_OVER : 2,
 };
 let global_state = STATES.BUSY;
 let global_player = YELLOW;
+let global_game_count = 0;
 
 function is_bot(player) {
     const playerName = (player === YELLOW ? "yellowPlayer" : "redPlayer");
@@ -22,7 +23,7 @@ function onClick(e) {
     const x = e.pageX;
     const y = e.pageY;
 
-    if (x > MAX_BOARD_X || y > MAX_BOARD_Y || x < ORIGIN_X) {
+    if (x > MAX_BOARD_X || y > MAX_BOARD_Y || x < ORIGIN_X || y < ORIGIN_Y) {
     	// off the board; ignore
 		return;
     }
@@ -41,33 +42,32 @@ function onClick(e) {
 }
 
 function end(result_check) {
-	global_state = STATES.GAME_OVER;
+	global_state = STATES.BUSY;
 		
 	if (result_check.result === RESULT.DRAW) {
 		message("DRAW!");
 		return;
 	}
-
-	drawWinLine(
-		result_check.squares[0].row, result_check.squares[0].col,
-		result_check.squares[3].row, result_check.squares[3].col);
-
 	if (result_check.result === RESULT.YELLOW_WINS) {
 		message("YELLOW WINS!");
 	} else {
 		message("RED WINS!");
 	}
+	afterAnimation(function() {
+		drawWinLine(
+			result_check.squares[0].row, result_check.squares[0].col,
+			result_check.squares[3].row, result_check.squares[3].col)
+	});
 }
 
 function get_next_move() {
 	if (is_bot(global_player)) {
 		global_state = STATES.BUSY;
 		message("thinking...");
-		// pause to let the message update
-		setTimeout(function() {
+		afterAnimation(function() {
 			const move = choose_move(global_player, global_board);
 			make_move(move.row, move.col);
-		}, 50);
+		});
 	} else {
 		message("your move!");
 		global_state = STATES.WAITING_FOR_INPUT;
@@ -79,20 +79,20 @@ function make_move(row, col) {
 
 	const result_check = check_result_with_squares(row, col, global_board);
 	const color = (global_player === YELLOW ? "#ff0" : "#f00");
-	drawPieceDrop(row, col, color, function () {
-		if (result_check.result !== RESULT.CONTINUE) {
-			end(result_check);
-		} else {
-			global_player = other(global_player);
-			get_next_move();
-		}
-	})
+	if (result_check.result !== RESULT.CONTINUE) {
+		end(result_check);
+	} else {
+		global_player = other(global_player);
+		get_next_move();
+	}
+	drawPieceDrop(row, col, color);
 }
 
 function new_game() {
 	global_state = STATES.BUSY;
 	global_player = YELLOW;
-	console.log("new game");
+	global_game_count++;
+	console.log("starting game " + global_game_count);
 	reset_board();
 	paper.clear();
 	drawEmptyBoard();

@@ -29,17 +29,17 @@ function drawEmptyBoard() {
     }
 }
 
-function drawPieceDrop(row, col, color, next_function) {
+// Queues an animation of a piece dropping.
+function drawPieceDrop(row, col, color) {
     let start_xy = toPixels(N_ROWS, col);
     let target_xy = toPixels(row, col);
-
     let circle = paper.circle(start_xy.x, start_xy.y, SQUARE_SIDE / 2.0 - 1); 
     
     circle.attr("fill", color);
-    circle.animate({cx: target_xy.x, cy: target_xy.y}, ANIMATION_MILLIS, 
-        "bounce", next_function);
+    circle.animate({cx: target_xy.x, cy: target_xy.y}, ANIMATION_MILLIS, "bounce");
 }
 
+// Queues drawing a dashed line.
 function drawWinLine(start_row, start_col, end_row, end_col) {
     let start = toPixels(start_row, start_col);
     let end = toPixels(end_row, end_col);
@@ -50,7 +50,18 @@ function drawWinLine(start_row, start_col, end_row, end_col) {
     path.attr("stroke-width", 4.0);
 }
 
-
 function message(string) {
     document.getElementById("message").innerHTML = string;
+}
+
+// pause for animation, then run the function unless the game has restarted
+function afterAnimation(f) {
+    let game_id = global_game_count;
+    setTimeout(function() {
+        if (global_game_count !== game_id) {
+            // the game has restarted since we paused
+            return;
+        }
+        f();
+    }, ANIMATION_MILLIS + 20);
 }
